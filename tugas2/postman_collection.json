@@ -1,0 +1,230 @@
+{
+  "info": {
+    "_postman_id": "tugas2-students-collection",
+    "name": "Tugas 2 - Students API",
+    "description": "Koleksi request untuk menguji REST API /api/v1/students (Praktikum Backend Lanjut - Pertemuan 2). Diimpor dari file ini langsung lewat Postman > Import > Raw Text.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Buat student (johndoe)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"nim\": \"210101001\",\n  \"grade\": 85.5\n}"
+        }
+      }
+    },
+    {
+      "name": "2. Buat student kedua (anita)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Anita Wijaya\",\n  \"nim\": \"210102002\",\n  \"grade\": 90.0\n}"
+        }
+      }
+    },
+    {
+      "name": "3. Buat student ketiga (budi)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Budi Santoso\",\n  \"nim\": \"210103003\",\n  \"grade\": 75.0\n}"
+        }
+      }
+    },
+    {
+      "name": "4. GET semua students (paginasi + sort)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "localhost:3000/api/v1/students?page=1&limit=2&sort=name&order=desc",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "2" },
+            { "key": "sort", "value": "name" },
+            { "key": "order", "value": "desc" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. GET students (search + filter)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "localhost:3000/api/v1/students?search=an&is_active=true",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"],
+          "query": [
+            { "key": "search", "value": "an" },
+            { "key": "is_active", "value": "true" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. GET student by id",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "localhost:3000/api/v1/students/1",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students", "1"]
+        }
+      }
+    },
+    {
+      "name": "7. PUT — ganti seluruh isi student #1",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students/1",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students", "1"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe Updated\",\n  \"nim\": \"210101001\",\n  \"grade\": 88.0,\n  \"is_active\": false\n}"
+        }
+      }
+    },
+    {
+      "name": "8. PUT tanpa NIM (harus gagal validasi)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students/1",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students", "1"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe Updated\"\n}"
+        }
+      }
+    },
+    {
+      "name": "9. PATCH — ubah sebagian (hanya is_active)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students/1",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students", "1"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"is_active\": true\n}"
+        }
+      }
+    },
+    {
+      "name": "10. POST dengan NIM kembar (harus 409 Co nflict)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "localhost:3000/api/v1/students",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Duplikat\",\n  \"nim\": \"210101001\",\n  \"grade\": 80\n}"
+        }
+      }
+    },
+    {
+      "name": "11. POST tanpa Content-Type (harus 415)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "localhost:3000/api/v1/students",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\":\"Test\"}"
+        }
+      }
+    },
+    {
+      "name": "12. DELETE student #2 (harus 204)",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "localhost:3000/api/v1/students/2",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students", "2"]
+        }
+      }
+    },
+    {
+      "name": "13. GET student id yang sudah dihapus (harus 404)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "localhost:3000/api/v1/students/2",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "students", "2"]
+        }
+      }
+    }
+  ]
+}
