@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -10,6 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
+
+	"latihan-fiber/app/repository"
+	"latihan-fiber/config"
+	"latihan-fiber/database"
 )
 
 var metodeBerbody = map[string]bool{
@@ -32,8 +37,23 @@ func requireJSON(c *fiber.Ctx) error {
 }
 
 func main() {
+	// 1. Konfigurasi environment (.env dipanggil di sini sekali)
+	config.LoadEnv()
+
+	// 2. Koneksi basis data — pool dipakai bersama oleh seluruh repository.
+	pool, err := database.NewPool(context.Background())
+	if err != nil {
+		log.Fatalf("database: %v", err)
+	}
+	defer pool.Close()
+
+	// 3. Perakitan dependency: pool → repository → handler.
+	//    Handler hanya menerima INTERFACE, bukan struct konkret.
+	studentRepository := repository.NewStudentRepository(pool)
+	studentHandler := NewStudentHandler(studentRepository)
+
 	app := fiber.New(fiber.Config{
-		AppName: "Praktikum Backend Lanjut - Pertemuan 2",
+		AppName: "Praktikum Backend Lanjut - Pertemuan 3",
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			status := fiber.StatusInternalServerError
 			pesan := "terjadi kesalahan pada server"
@@ -58,24 +78,33 @@ func main() {
 
 	api := app.Group("/api/v1")
 
+	// /health ikut memeriksa kondisi basis data.
+	// Sukses → 200. DB tidak dapat dihubungi → 503 Service Unavailable.
 	api.Get("/health", func(c *fiber.Ctx) error {
-		return ok(c, "server berjalan", fiber.Map{"timestamp": time.Now()})
+		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
+		defer cancel()
+
+		if err := pool.Ping(ctx); err != nil {
+			return fail(c, fiber.StatusServiceUnavailable, "database tidak dapat dihubungi")
+		}
+		return ok(c, "server dan database berjalan", fiber.Map{"timestamp": time.Now()})
 	})
 
-	// requireJSON dipasang khusus pada grup ini, bukan global
+	// requireJSON dipasang khusus pada grup ini, bukan global.
 	s := api.Group("/students", requireJSON)
-	s.Get("/", listStudents)
-	s.Get("/:id", getStudent)
-	s.Post("/", createStudent)
-	s.Put("/:id", replaceStudent)
-	s.Patch("/:id", patchStudent)
-	s.Delete("/:id", deleteStudent)
+	s.Get("/", studentHandler.List)
+	s.Get("/:id", studentHandler.Get)
+	s.Post("/", studentHandler.Create)
+	s.Put("/:id", studentHandler.Replace)
+	s.Patch("/:id", studentHandler.Patch)
+	s.Delete("/:id", studentHandler.Delete)
 
 	// Endpoint yang tidak dikenal
 	app.Use(func(c *fiber.Ctx) error {
 		return fail(c, fiber.StatusNotFound, "endpoint tidak ditemukan")
 	})
 
-	fmt.Println("Server berjalan di http://localhost:3000")
-	log.Fatal(app.Listen(":3000"))
+	port := config.GetEnv("APP_PORT", "3000")
+	fmt.Printf("Server berjalan di http://localhost:%s\n", port)
+	log.Fatal(app.Listen(":" + port))
 }
