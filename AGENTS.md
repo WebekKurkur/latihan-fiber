@@ -29,3 +29,27 @@ Catatan penggunaan AI untuk pengerjaan tugas pada repo ini.
 ## Verifikasi
 
 Seluruh endpoint diuji lewat koleksi Postman dan dicocokkan dengan status yang diharapkan pada modul.
+
+## agents.md - Modul 4
+
+### Bagian yang Dibantu AI
+
+- memberitahu bagian mana yang dipisahkan dari isi helper.go dan handler.go ke dalam file masing-masing.
+- Membuat diagram arsitektur dan arah dependency menggunakan Mermaid.
+- Memeriksa kemungkinan kebocoran tanggung jawab antar-layer.
+- Membantu menemukan error yang tidak terlihat oleh penyusun.
+- penyesuaian implementasi dari langkah langkah ke proyek.
+
+### Bagian yang Dikerjakan Sendiri
+
+- Membuat struktur folder Modul 4.
+- Mengembangkan middleware.
+- Mengembangkan logger.
+- Mengembangkan `app.go`.
+- Mengembangkan `student_service.go`.
+
+### Verifikasi
+
+- Memahami dan meninjau kembali hasil bantuan AI sebelum digunakan.
+- Menyesuaikan kode dengan struktur proyek yang dikerjakan.
+- Menguji implementasi dan memastikan setiap layer memiliki tanggung jawab yang sesuai.
