@@ -18,14 +18,14 @@ var allowedSort = map[string]bool{
 // reqCtx memberi batas waktu untuk setiap operasi basis data.
 // Tanpa batas waktu, satu query yang menggantung dapat menahan koneksi
 // selamanya dan lama-lama menghabiskan seluruh isi pool.
-func reqCtx(c *fiber.Ctx) (context.Context, context.CancelFunc) {
+func ReqCtx(c *fiber.Ctx) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(c.UserContext(), 5*time.Second)
 }
 
 // paramID membaca :id dari URL dan memastikan nilainya angka positif.
 // Mengembalikan (id, true) bila valid; (0, false) bila bukan angka
 // atau bukan bilangan positif.
-func paramID(c *fiber.Ctx) (int, bool) {
+func ParamID(c *fiber.Ctx) (int, bool) {
 	raw := c.Params("id")
 	id, err := strconv.Atoi(raw)
 	if err != nil || id <= 0 {
@@ -36,7 +36,7 @@ func paramID(c *fiber.Ctx) (int, bool) {
 
 // parseListQuery membaca query string dan memberi nilai bawaan yang aman.
 // Aturan pentingnya: masukan dari klien tidak pernah dipercaya begitu saja.
-func parseListQuery(c *fiber.Ctx) model.ListQuery {
+func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 	q := model.ListQuery{
 		Page:   c.QueryInt("page", 1),
 		Limit:  c.QueryInt("limit", 10),
