@@ -12,22 +12,36 @@ import (
 	"latihan-fiber/middleware"
 )
 
-func Register(
-	app *fiber.App,
-	pool *pgxpool.Pool,
-	studentService *service.StudentService,
-) {
+type Dependencies struct {
+	Pool           *pgxpool.Pool
+	JWT            *helper.JWTManager
+	StudentService *service.StudentService
+	AuthService    *service.AuthService
+}
+
+func Register(app *fiber.App, deps Dependencies) {
 	api := app.Group("/api/v1")
 
-	api.Get("/health", healthCheck(pool))
+	// --- publik ---
+	api.Get("/health", healthCheck(deps.Pool))
 
-	students := api.Group("/students", middleware.RequireJSON)
-	students.Get("/", studentService.List)
-	students.Get("/:id", studentService.Get)
-	students.Post("/", studentService.Create)
-	students.Put("/:id", studentService.Replace)
-	students.Patch("/:id", studentService.Patch)
-	students.Delete("/:id", studentService.Delete)
+	// --- autentikasi ---
+	auth := api.Group("/auth", middleware.RequireJSON)
+	auth.Post("/register", deps.AuthService.Register)
+	auth.Post("/login", middleware.LoginRateLimiter(), deps.AuthService.Login)
+	auth.Post("/refresh", deps.AuthService.Refresh)
+	auth.Post("/logout", deps.AuthService.Logout)
+	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
+
+	// --- wajib membawa access token ---
+	student := api.Group("/student",
+		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	student.Get("/", deps.StudentService.List)
+	student.Get("/:id", deps.StudentService.Get)
+	student.Post("/", deps.StudentService.Create)
+	student.Put("/:id", deps.StudentService.Replace)
+	student.Patch("/:id", deps.StudentService.Patch)
+	student.Delete("/:id", deps.StudentService.Delete)
 }
 
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {
