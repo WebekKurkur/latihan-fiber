@@ -41,6 +41,6 @@ type RefreshToken struct {
 // Isinya sengaja minimal: hanya yang benar-benar diperlukan middleware.
 type AuthStudents struct {
 	StudentID int    `json:"students_id"`
-	Name  	  string `json:"name"`
+	Name      string `json:"name"`
 	Role      string `json:"role"`
 }

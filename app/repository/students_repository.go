@@ -24,6 +24,7 @@ var (
 type StudentRepository interface {
 	FindAll(ctx context.Context, q model.ListQuery) ([]model.Student, int, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
+	FindByUsername(ctx context.Context, name string) (model.Student, error)
 	Create(ctx context.Context, s model.Student) (model.Student, error)
 	Update(ctx context.Context, s model.Student) (model.Student, error)
 	Delete(ctx context.Context, id int) error
@@ -130,9 +131,10 @@ func (r *studentPostgresRepository) FindByID(
 	var s model.Student
 
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, name, "NIM", "Grade", is_active, created_at
+		`SELECT id, name, "NIM", "Grade", password, role, is_active, created_at
          FROM students WHERE id = $1`, id,
-	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.IsActive, &s.CreatedAt)
+	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Password, &s.Role,
+		&s.IsActive, &s.CreatedAt)
 
 	if err != nil {
 		// pgx.ErrNoRows diterjemahkan menjadi error milik kita sendiri.
@@ -151,10 +153,10 @@ func (r *studentPostgresRepository) Create(
 	// RETURNING membuat id dan created_at hasil buatan basis data
 	// langsung ikut kembali, tanpa perlu query kedua.
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO students (name, "NIM", "Grade", is_active)
-         VALUES ($1, $2, $3, $4)
+		`INSERT INTO students (name, "NIM", "Grade", password, role, is_active)
+		 VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, created_at`,
-		s.Name, s.NIM, s.Grade, s.IsActive,
+		s.Name, s.NIM, s.Grade, s.Password, s.Role, s.IsActive,
 	).Scan(&s.ID, &s.CreatedAt)
 
 	if err != nil {
@@ -227,9 +229,9 @@ func (r *studentPostgresRepository) FindByUsername(
 	var s model.Student
 
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, name, NIM, password, role, is_active, created_at 
-         FROM Students WHERE LOWER(name) = LOWER($1)`, s.Name,
-	).Scan(&s.ID, &s.Name, &s.NIM, &s.Password, &s.Role,
+		`SELECT id, name, "NIM", "Grade", password, role, is_active, created_at
+         FROM students WHERE LOWER(name) = LOWER($1)`, username,
+	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Password, &s.Role,
 		&s.IsActive, &s.CreatedAt)
 
 	if err != nil {
