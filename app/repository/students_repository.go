@@ -219,25 +219,25 @@ func isUniqueViolation(err error) bool {
 	return false
 }
 
-// FindByUsername dipakai saat login. Pencocokan tidak membedakan 
-// huruf besar dan kecil, sama seperti unique index-nya. 
-func (r *studentPostgresRepository) FindByUsername( 
-    ctx context.Context, username string, 
-) (model.Student, error) { 
-    var u model.Student 
-  
-    err := r.pool.QueryRow(ctx, 
-        `SELECT id, username, email, password, role, is_active, created_at 
-         FROM users WHERE LOWER(username) = LOWER($1)`, username, 
-    ).Scan(&u.ID, &u.Name, &u.NIM, &u.Password, &u.Role, 
-        &u.IsActive, &u.CreatedAt) 
-  
-    if err != nil { 
-        if errors.Is(err, pgx.ErrNoRows) { 
-            return model.Student{}, ErrNotFound 
-        } 
-        return model.Student{}, fmt.Errorf("mengambil user: %w", err) 
-    } 
-  
-    return u, nil 
-} 
+// FindByUsername dipakai saat login. Pencocokan tidak membedakan
+// huruf besar dan kecil, sama seperti unique index-nya.
+func (r *studentPostgresRepository) FindByUsername(
+	ctx context.Context, username string,
+) (model.Student, error) {
+	var s model.Student
+
+	err := r.pool.QueryRow(ctx,
+		`SELECT id, name, NIM, password, role, is_active, created_at 
+         FROM Students WHERE LOWER(name) = LOWER($1)`, s.Name,
+	).Scan(&s.ID, &s.Name, &s.NIM, &s.Password, &s.Role,
+		&s.IsActive, &s.CreatedAt)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.Student{}, ErrNotFound
+		}
+		return model.Student{}, fmt.Errorf("mengambil user: %w", err)
+	}
+
+	return s, nil
+}
