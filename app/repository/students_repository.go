@@ -95,7 +95,7 @@ func (r *studentPostgresRepository) FindAll(
 	}
 
 	sqlText := fmt.Sprintf(
-		`SELECT id, name, "NIM", "Grade", is_active, created_at
+		`SELECT id, name, "NIM", "Grade", role, is_active, created_at
          FROM students%s
          ORDER BY %s %s
          LIMIT $%d OFFSET $%d`,
@@ -112,7 +112,7 @@ func (r *studentPostgresRepository) FindAll(
 	hasil := []model.Student{}
 	for rows.Next() {
 		var s model.Student
-		if err := rows.Scan(&s.ID, &s.Name, &s.NIM, &s.Grade,
+		if err := rows.Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Role,
 			&s.IsActive, &s.CreatedAt); err != nil {
 			return nil, 0, fmt.Errorf("membaca baris student: %w", err)
 		}
@@ -238,7 +238,7 @@ func (r *studentPostgresRepository) FindByUsername(
 		if errors.Is(err, pgx.ErrNoRows) {
 			return model.Student{}, ErrNotFound
 		}
-		return model.Student{}, fmt.Errorf("mengambil user: %w", err)
+		return model.Student{}, fmt.Errorf("mengambil student: %w", err)
 	}
 
 	return s, nil

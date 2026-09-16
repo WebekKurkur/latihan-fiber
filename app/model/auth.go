@@ -4,7 +4,7 @@ import "time"
 
 type RegisterRequest struct {
 	Name     string `json:"name"`
-	NIM      string `json:"email"`
+	NIM      string `json:"nim"`
 	Password string `json:"password"`
 	// Perhatikan: TIDAK ADA field Role di sini. Bila ada, siapa pun
 	// dapat mendaftar sebagai admin (kerentanan mass assignment).

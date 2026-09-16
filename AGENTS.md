@@ -53,3 +53,19 @@ Seluruh endpoint diuji lewat koleksi Postman dan dicocokkan dengan status yang d
 - Memahami dan meninjau kembali hasil bantuan AI sebelum digunakan.
 - Menyesuaikan kode dengan struktur proyek yang dikerjakan.
 - Menguji implementasi dan memastikan setiap layer memiliki tanggung jawab yang sesuai.
+
+## agents.md - Modul 5
+
+### Bagian yang Dibantu AI
+
+- Membuat koleksi `postman_collection5.json` untuk menguji endpoint authentication dan security.
+- Membantu menguji alur register, login, refresh token, logout, dan endpoint yang dilindungi.
+- Membantu menguji skenario keamanan seperti token tidak valid, `alg: none`, mass assignment, dan rate limiter.
+- Memeriksa hubungan antar-file dan kesesuaian kontrak antara model, repository, service, helper, middleware, route, dan `main.go`.
+- Membantu menemukan error yang tidak terlihat oleh penyusun.
+
+### Verifikasi
+
+- Memeriksa dan memahami kembali hasil bantuan AI.
+- Menjalankan unit test, build aplikasi, dan pengujian endpoint melalui Postman.
+- Menyesuaikan hasil pemeriksaan dengan struktur proyek dan kebutuhan Modul 5.
