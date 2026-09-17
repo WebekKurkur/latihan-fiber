@@ -92,10 +92,10 @@ kolom **Default** di bawah.
 |----------------|----------------------|---------------------------------------------------------------------------------------------|
 | `APP_PORT`     | `3000`               | Port HTTP yang dipakai server Fiber untuk listen.                                           |
 | `DB_HOST`      | `localhost`          | Host PostgreSQL.                                                                            |
-| `DB_PORT`      | `5432`               | Port PostgreSQL.                                                                            |
-| `DB_USER`      | `postgres`           | User PostgreSQL yang dipakai untuk koneksi.                                                 |
+| `DB_PORT`      | `port postgres`      | Port PostgreSQL.                                                                            |
+| `DB_USER`      | `user postgres`      | User PostgreSQL yang dipakai untuk koneksi.                                                 |
 | `DB_PASSWORD`  | `""` (kosong)        | Kata sandi user PostgreSQL. Wajib diisi jika server PostgreSQL mengaktifkan autentikasi.    |
-| `DB_NAME`      | `praktikum_backend`  | Nama database yang dipakai aplikasi (lihat langkah 1 pada bagian "Cara Menyiapkan Basis Data"). |
+| `DB_NAME`      | `database`           | Nama database yang dipakai aplikasi (lihat langkah 1 pada bagian "Cara Menyiapkan Basis Data"). |
 | `DB_SSLMODE`   | `disable`            | Mode SSL untuk koneksi. Gunakan `disable` untuk pengembangan lokal, `require` untuk produksi.|
 | `DB_MAX_CONNS` | `10`                 | Batas atas jumlah koneksi di pool pgxpool.                                                  |
 
