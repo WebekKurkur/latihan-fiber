@@ -68,6 +68,7 @@ func main() {
 	app := config.NewApp(logger, route.Dependencies{
 		Pool:           pool,
 		JWT:            jwtManager,
+		Permissions:    permissions,
 		StudentService: studentService,
 		AuthService:    authService,
 	})

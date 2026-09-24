@@ -15,6 +15,7 @@ import (
 type Dependencies struct {
 	Pool           *pgxpool.Pool
 	JWT            *helper.JWTManager
+	Permissions    *helper.PermissionSet
 	StudentService *service.StudentService
 	AuthService    *service.AuthService
 }
@@ -33,15 +34,27 @@ func Register(app *fiber.App, deps Dependencies) {
 	auth.Post("/logout", deps.AuthService.Logout)
 	auth.Get("/me", middleware.RequireAuth(deps.JWT), deps.AuthService.Me)
 
-	// --- wajib membawa access token ---
+	// --- wajib login, hak akses diperiksa per endpoint ---
 	student := api.Group("/student",
 		middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
-	student.Get("/", deps.StudentService.List)
+
+	perms := deps.Permissions
+
+	// Hak dapat diputuskan tanpa melihat data -> middleware.
+	student.Get("/",
+		middleware.RequirePermission(perms, "student:list"),
+		deps.StudentService.List)
+	student.Post("/",
+		middleware.RequirePermission(perms, "student:create"),
+		deps.StudentService.Create)
+	student.Delete("/:id",
+		middleware.RequirePermission(perms, "student:delete"),
+		deps.StudentService.Delete)
+
+	// Hak bergantung pada kepemilikan data -> diperiksa di service.
 	student.Get("/:id", deps.StudentService.Get)
-	student.Post("/", deps.StudentService.Create)
 	student.Put("/:id", deps.StudentService.Replace)
 	student.Patch("/:id", deps.StudentService.Patch)
-	student.Delete("/:id", deps.StudentService.Delete)
 }
 
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {
