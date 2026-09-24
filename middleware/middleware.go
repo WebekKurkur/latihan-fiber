@@ -110,11 +110,7 @@ func RequireJSON(c *fiber.Ctx) error {
 		contentType := c.Get("Content-Type")
 
 		if !strings.HasPrefix(contentType, fiber.MIMEApplicationJSON) {
-			return helper.Fail(
-				c,
-				fiber.StatusUnsupportedMediaType,
-				"Content-Type harus application/json",
-			)
+			return helper.UnsupportedMediaType("Content-Type harus application/json")
 		}
 	}
 
