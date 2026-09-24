@@ -46,6 +46,18 @@ func main() {
 
 	studentRepository := repository.NewStudentRepository(pool)
 	tokenRepository := repository.NewTokenRepository(pool)
+	roleRepository := repository.NewRoleRepository(pool)
+
+	// Pemetaan role ke permission dibaca SEKALI saat aplikasi menyala.
+	// Konsekuensinya: perubahan hak akses di database baru berlaku setelah
+	// aplikasi dijalankan ulang. Itu keputusan sadar, bukan kelalaian.
+	rawPermissions, err := roleRepository.LoadPermissions(context.Background())
+	if err != nil {
+		logger.Error("gagal memuat permission", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	permissions := helper.NewPermissionSet(rawPermissions)
+	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
 
 	studentService := service.NewStudentService(studentRepository)
 	authService := service.NewAuthService(
