@@ -69,3 +69,35 @@ func ParseListQuery(c *fiber.Ctx) model.ListQuery {
 
 	return q
 }
+
+// ParseCursorQuery membaca query string pada endpoint cursor pagination.
+// Limit dan search memakai nilai bawaan yang sama dengan ParseListQuery,
+// sedangkan cursor (bila dikirim) haruslah cursor yang dapat didecode.
+func ParseCursorQuery(c *fiber.Ctx) (model.CursorQuery, error) {
+	q := model.CursorQuery{
+		Limit:  c.QueryInt("limit", 10),
+		Search: strings.TrimSpace(c.Query("search")),
+	}
+	if q.Limit < 1 {
+		q.Limit = 10
+	}
+	if q.Limit > 100 {
+		q.Limit = 100
+	}
+
+	if raw := c.Query("cursor"); raw != "" {
+		cur, err := DecodeCursor(raw)
+		if err != nil {
+			return model.CursorQuery{}, err
+		}
+		q.After = &cur
+	}
+
+	if raw := c.Query("is_active"); raw != "" {
+		if v, err := strconv.ParseBool(raw); err == nil {
+			q.IsActive = &v
+		}
+	}
+
+	return q, nil
+}

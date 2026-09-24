@@ -17,29 +17,32 @@ type Student struct {
 	OwnerID *int `json:"owner_id,omitempty"`
 }
 
-// POST — semua field wajib
-type CreateStudentRequest struct {
-	Name  string  `json:"name"`
-	NIM   string  `json:"nim"`
-	Grade float64 `json:"grade"`
-}
+// Mulai pertemuan ini, aturan validasi ditulis sebagai tag pada struct. 
+// Aturan dan bentuk data berada pada baris yang sama, sehingga menambah 
+// satu field tanpa aturannya menjadi kelalaian yang langsung terlihat. 
+type CreateStudentRequest struct { 
+    Name   string  `json:"username" validate:"required,min=3,max=30,alphanum"` 
+    NIM    string  `json:"email"    validate:"required,email,max=120"` 
+    Grade  float64 `json:"password" validate:"required,min=8,max=72,nospace"` 
+} 
 
-// PUT — ganti seluruh isi, jadi field bertipe biasa dan semuanya wajib
-type ReplaceStudentRequest struct {
-	Name     string  `json:"name"`
-	NIM      string  `json:"nim"`
-	Grade    float64 `json:"grade"`
+  
+type ReplaceStudentRequest struct { 
+    Name   string  `json:"name"  validate:"required,min=3,max=30,alphanum"` 
+    NIM    string  `json:"nim"    validate:"required,email,max=120"` 
+    Grade  float64 `json:"grade" validate:"required,min=0,max=100"` 
 	IsActive bool    `json:"is_active"`
-}
-
-// PATCH — ubah sebagian, jadi field bertipe pointer supaya bisa dibedakan
-// antara "tidak dikirim" (nil) dan "dikirim bernilai kosong"
-type PatchStudentRequest struct {
-	Name     *string  `json:"name,omitempty"`
-	NIM      *string  `json:"nim,omitempty"`
-	Grade    *float64 `json:"grade,omitempty"`
-	IsActive *bool    `json:"is_active,omitempty"`
-}
+} 
+  
+// Pada PATCH, pointer membedakan "tidak dikirim" (nil) dari "dikirim 
+// bernilai kosong". omitnil dipilih karena ia menyatakan maksud yang 
+// sebenarnya: lewati hanya bila nil. 
+type PatchStudentRequest struct { 
+    Name     *string  `json:"name,omitempty"  validate:"omitnil,min=3,max=30,alphanum"` 
+    NIM      *string  `json:"nim,omitempty"    validate:"omitnil,email,max=120"` 
+    Grade    *float64 `json:"grade,omitempty" validate:"omitnil,min=0,max=100"` 
+    IsActive *bool    `json:"is_active,omitempty"` 
+} 
 
 // AssignRoleRequest dipakai endpoint PATCH /students/:id/role.
 type AssignRoleRequest struct {
@@ -48,10 +51,11 @@ type AssignRoleRequest struct {
 
 // Amplop baku untuk semua respons sukses.
 type WebResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Data    any    `json:"data,omitempty"`
-	Meta    *Meta  `json:"meta,omitempty"`
+	Success bool        `json:"success"`
+	Message string      `json:"message"`
+	Data    any         `json:"data,omitempty"`
+	Meta    *Meta       `json:"meta,omitempty"`
+	Cursor  *CursorMeta `json:"cursor,omitempty"`
 }
 
 // ErrorResponse adalah bentuk baku untuk SETIAP kegagalan.
@@ -91,4 +95,29 @@ type ListQuery struct {
 // Perhitungan ini pindah ke sini karena kini dipakai langsung oleh SQL.
 func (q ListQuery) Offset() int {
 	return (q.Page - 1) * q.Limit
+}
+
+// Cursor adalah penanda posisi pada keyset pagination.
+type Cursor struct {
+	CreatedAt time.Time `json:"-"`
+	ID        int       `json:"-"`
+}
+
+// CursorQuery menggantikan ListQuery pada endpoint yang memakai cursor.
+type CursorQuery struct {
+	Limit    int
+	Search   string
+	IsActive *bool
+	After    *Cursor
+}
+
+// CursorMeta menggantikan Meta pada endpoint yang memakai cursor.
+//
+// Perhatikan tidak adanya Total dan TotalPages. Keduanya tidak dapat
+// disediakan tanpa COUNT(*) atas seluruh tabel — persis biaya yang ingin
+// dihindari oleh pagination berbasis cursor.
+type CursorMeta struct {
+	Limit      int    `json:"limit"`
+	NextCursor string `json:"next_cursor,omitempty"`
+	HasMore    bool   `json:"has_more"`
 }

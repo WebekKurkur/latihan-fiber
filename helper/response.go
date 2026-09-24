@@ -17,6 +17,16 @@ func Ok(c *fiber.Ctx, message string, data any) error {
 	})
 }
 
+// SuccessCursor dipakai oleh endpoint yang memakai cursor pagination.
+// Ia menerima CursorMeta — bukan Meta — karena cursor TIDAK menyediakan
+// total atau nomor halaman.
+func SuccessCursor(c *fiber.Ctx, message string, data any, meta *model.CursorMeta) error {
+	return c.Status(fiber.StatusOK).JSON(model.WebResponse{
+		Success: true, Message: message, Data: data,
+		Cursor: meta,
+	})
+}
+
 func OkList(c *fiber.Ctx, message string, data any, meta *model.Meta) error {
 	return c.Status(fiber.StatusOK).JSON(model.WebResponse{
 		Success: true, Message: message, Data: data, Meta: meta,

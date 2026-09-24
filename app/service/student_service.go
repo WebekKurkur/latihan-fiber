@@ -33,19 +33,40 @@ func (s *StudentService) List(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
 
-	q := helper.ParseListQuery(c)
+	// Format dipilih SEBELUM query dijalankan. Bila client meminta format
+	// yang tidak dapat kita hasilkan, tidak ada gunanya membebani database
+	// untuk hasil yang akan dibuang.
+	format, err := helper.Negotiate(c, helper.FormatJSON, helper.FormatCSV)
+	if err != nil {
+		return err
+	}
 
-	students, total, err := s.repo.FindAll(ctx, q)
+	q, err := helper.ParseCursorQuery(c)
+	if err != nil {
+		return helper.BadRequest("cursor tidak sah")
+	}
+
+	rows, err := s.repo.FindAfterCursor(ctx, q)
 	if err != nil {
 		return helper.Internal(err)
 	}
 
-	return helper.OkList(c, "daftar student berhasil diambil", students, &model.Meta{
-		Page:       q.Page,
-		Limit:      q.Limit,
-		Total:      total,
-		TotalPages: CountTotalPages(total, q.Limit),
-	})
+	// Baris tambahan hasil limit+1 dipotong di sini. Ia hanya penanda bahwa
+	// masih ada halaman berikutnya, bukan bagian dari halaman ini.
+	hasMore := len(rows) > q.Limit
+	if hasMore {
+		rows = rows[:q.Limit]
+	}
+	meta := &model.CursorMeta{Limit: q.Limit, HasMore: hasMore}
+	if hasMore && len(rows) > 0 {
+		last := rows[len(rows)-1]
+		meta.NextCursor = helper.EncodeCursor(last.CreatedAt, last.ID)
+	}
+
+	if format == helper.FormatCSV {
+		return helper.WriteUsersCSV(c, rows)
+	}
+	return helper.SuccessCursor(c, "daftar student berhasil diambil", rows, meta)
 }
 
 // get/students/:id tugas 6
@@ -103,7 +124,7 @@ func (s *StudentService) Create(c *fiber.Ctx) error {
 	req.Name = strings.TrimSpace(req.Name)
 	req.NIM = strings.TrimSpace(req.NIM)
 
-	if errs := ValidateCreate(req); len(errs) > 0 {
+	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
 	}
 
