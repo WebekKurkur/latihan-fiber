@@ -39,9 +39,14 @@ func corsPolicy(allowedOrigins string) fiber.Handler {
     }) 
 }
 
-// RequestLogger mencatat setiap request ke log terstruktur. 
-// Perhatikan polanya: fungsi yang MENGEMBALIKAN fungsi (closure) — 
+// RequestLogger mencatat setiap request ke log terstruktur.
+// Perhatikan polanya: fungsi yang MENGEMBALIKAN fungsi (closure) —
 // inilah cara middleware menerima dependensi dari luar.
+//
+// Jika RequireAuth sudah dipasang dan identitas tersimpan di Locals,
+// user_id dan role akan ikut dicatat. Inilah inti Langkah 8: keputusan
+// akses (403, 422 dari AssignRole) yang sebelumnya tak punya jejak
+// sekarang dapat ditelusuri ke siapa yang meminta.
 func RequestLogger(logger *slog.Logger) fiber.Handler {
     return func(c *fiber.Ctx) error {
         start := time.Now()
@@ -50,15 +55,28 @@ func RequestLogger(logger *slog.Logger) fiber.Handler {
 
         requestID, _ := c.Locals("requestid").(string)
 
-        logger.Info(
-            "http_request",
+        // Bentuk default: anonim (request publik, mis. /auth/login).
+        attrs := []slog.Attr{
             slog.String("request_id", requestID),
             slog.String("method", c.Method()),
             slog.String("path", c.Path()),
             slog.Int("status", c.Response().StatusCode()),
             slog.Duration("duration", time.Since(start)),
             slog.String("ip", c.IP()),
-        )
+        }
+
+        // Hanya tambahkan identitas kalau RequireAuth sudah mengisi Locals.
+        // Pemeriksaan dengan helper.CurrentUser (bukan type assertion mentah)
+        // supaya kunci penyimpanan tetap satu sumber kebenaran.
+        if user, ok := helper.CurrentUser(c); ok {
+            attrs = append(attrs,
+                slog.Int("user_id", user.StudentID),
+                slog.String("role", user.Role),
+            )
+        }
+
+        logger.LogAttrs(c.UserContext(), slog.LevelInfo,
+            "http_request", attrs...)
 
         return err
     }

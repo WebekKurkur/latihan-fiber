@@ -44,3 +44,20 @@ type AuthStudents struct {
 	Name      string `json:"name"`
 	Role      string `json:"role"`
 }
+
+// ProfileResponse dikembalikan oleh endpoint GET /auth/me.
+//
+// Bentuknya dipisah dari model.Student karena:
+//  1. Kita ingin menyembunyikan kolom internal (password, owner_id)
+//     tanpa menulis tag json:"-" di banyak tempat;
+//  2. Daftar permission adalah TANGGUNG JAWAB endpoint /auth/me, bukan
+//     entity student. Kalau besok ada endpoint lain yang juga butuh
+//     profil, ia cukup membentuk responsnya sendiri dari sumber yang
+//     sama tanpa ikut menyeret field permission.
+type ProfileResponse struct {
+	Student     Student   `json:"student"`
+	Role        string    `json:"role"`
+	Permissions []string  `json:"permissions"`
+	IsActive    bool      `json:"is_active"`
+	GeneratedAt time.Time `json:"generated_at"`
+}

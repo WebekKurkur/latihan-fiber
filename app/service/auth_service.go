@@ -21,6 +21,7 @@ type AuthService struct {
 	tokens     repository.TokenRepository
 	jwt        *helper.JWTManager
 	refreshTTL time.Duration
+	perms      *helper.PermissionSet
 }
 
 func NewAuthService(
@@ -28,9 +29,11 @@ func NewAuthService(
 	tokens repository.TokenRepository,
 	jwtManager *helper.JWTManager,
 	refreshTTL time.Duration,
+	perms *helper.PermissionSet,
 ) *AuthService {
 	return &AuthService{
-		student: student, tokens: tokens, jwt: jwtManager, refreshTTL: refreshTTL,
+		student: student, tokens: tokens, jwt: jwtManager,
+		refreshTTL: refreshTTL, perms: perms,
 	}
 }
 
@@ -185,7 +188,22 @@ func (s *AuthService) Me(c *fiber.Ctx) error {
 		return helper.Fail(c, fiber.StatusUnauthorized, "student tidak ditemukan")
 	}
 
-	return helper.Ok(c, "profil berhasil diambil", student)
+	// Daftar permission SELALU diambil dari PermissionSet yang sama
+	// dengan yang dipakai middleware RequirePermission. Dengan begitu
+	// apa yang klien lihat di /auth/me selalu konsisten dengan apa
+	// yang akan diterimanya (atau tidak) saat memanggil endpoint lain.
+	//
+	// Sumbernya role pada AuthStudents (di JWT), bukan role pada
+	// tabel students: bila admin mengganti role-nya sendiri tepat
+	// sebelum request ini, server masih memakai role lama sampai
+	// token baru diterbitkan. Itu disengaja.
+	return helper.Ok(c, "profil berhasil diambil", model.ProfileResponse{
+		Student:     student,
+		Role:        authUser.Role,
+		Permissions: s.perms.PermissionsOf(authUser.Role),
+		IsActive:    student.IsActive,
+		GeneratedAt: time.Now(),
+	})
 }
 
 // issueTokenPair membuat access token dan refresh token sekaligus.

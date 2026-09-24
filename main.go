@@ -63,6 +63,7 @@ func main() {
 	authService := service.NewAuthService(
 		studentRepository, tokenRepository, jwtManager,
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,
+		permissions,
 	)
 
 	app := config.NewApp(logger, route.Dependencies{
