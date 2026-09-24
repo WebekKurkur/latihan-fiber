@@ -46,13 +46,29 @@ type AssignRoleRequest struct {
 	Role string `json:"role"`
 }
 
-// Amplop baku untuk semua respons (sukses maupun gagal)
+// Amplop baku untuk semua respons sukses.
 type WebResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
 	Meta    *Meta  `json:"meta,omitempty"`
-	Errors  any    `json:"errors,omitempty"`
+}
+
+// ErrorResponse adalah bentuk baku untuk SETIAP kegagalan.
+// Ia hanya dibentuk oleh ErrorHandler terpusat; service tidak menulis
+// response kegagalan secara langsung.
+//
+// field "errors" pada versi lama diganti "fields" agar sesuai dengan
+// Validator.ValidationErrors (satu pesan per field) dan tidak rancu
+// dengan array of objects. Penambahan code + request_id adalah
+// breaking change yang sengaja: code adalah kontrak, request_id
+// adalah pengikat antara laporan klien dan log server.
+type ErrorResponse struct {
+	Success   bool              `json:"success"`
+	Code      string            `json:"code"`
+	Message   string            `json:"message"`
+	Fields    map[string]string `json:"fields,omitempty"`
+	RequestID string            `json:"request_id,omitempty"`
 }
 
 type Meta struct {
