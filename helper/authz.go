@@ -1,6 +1,9 @@
 package helper
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 // PermissionSet menyimpan pemetaan role ke daftar permission miliknya.
 type PermissionSet struct {
@@ -30,11 +33,13 @@ func NewPermissionSet(raw map[string][]string) *PermissionSet {
 // jawabannya SELALU false. Prinsipnya disebut fail closed.
 func (p *PermissionSet) Can(role, permission string) bool {
 	if p == nil {
+		fmt.Printf("PERINGATAN: PermissionSet belum diinisialisasi, periksa konfigurasi permission\n")
 		return false
 	}
 
 	permissions, ok := p.byRole[role]
 	if !ok {
+		fmt.Printf("PERINGATAN: role %q tidak dikenal, periksa konfigurasi permission\n", role)
 		return false
 	}
 

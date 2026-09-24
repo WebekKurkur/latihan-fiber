@@ -58,6 +58,8 @@ func Register(app *fiber.App, deps Dependencies) {
 	student.Get("/:id", deps.StudentService.Get)
 	student.Put("/:id", deps.StudentService.Replace)
 	student.Patch("/:id", deps.StudentService.Patch)
+
+	
 }
 
 func healthCheck(pool *pgxpool.Pool) fiber.Handler {

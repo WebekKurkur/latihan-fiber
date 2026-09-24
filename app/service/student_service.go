@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -27,7 +29,6 @@ func NewStudentService(
 ) *StudentService {
 	return &StudentService{repo: repo, perms: perms}
 }
-
 
 func (s *StudentService) List(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
@@ -55,6 +56,7 @@ func (s *StudentService) Get(c *fiber.Ctx) error {
 	defer cancel()
 
 	current, ok := helper.CurrentUser(c)
+	fmt.Println("current", current, "ok", ok)
 	if !ok {
 		return helper.Fail(c, fiber.StatusUnauthorized, "belum terautentikasi")
 	}
@@ -68,11 +70,11 @@ func (s *StudentService) Get(c *fiber.Ctx) error {
 	// Pemeriksaan hak akses dilakukan SEBELUM data lengkap diambil.
 	// Bila dibalik, penyerang dapat membedakan id yang ada dari yang
 	// tidak ada berdasarkan perbedaan waktu tanggap 403 vs 404.
-	ownerID, err := s.repo.FindOwnerID(ctx, id)
-	if err != nil {
-		return translateError(c, err, "gagal mengambil data student")
-	}
-	if !CanAccessStudent(current, ownerID, s.perms, "student:read:any") {
+	// ownerID, err := s.repo.FindOwnerID(ctx, id)
+	// if err != nil {
+	// 	return translateError(c, err, "gagal mengambil data student")
+	// }
+	if !CanAccessStudent(current, &id, s.perms, "student:read:any") {
 		return helper.Fail(c, fiber.StatusForbidden,
 			"tidak berhak mengakses data student lain")
 	}
@@ -147,11 +149,11 @@ func (s *StudentService) Replace(c *fiber.Ctx) error {
 
 	// Pemeriksaan hak dilakukan sebelum query Update untuk mencegah
 	// timing attack membedakan id yang ada dari yang tidak ada.
-	ownerID, err := s.repo.FindOwnerID(ctx, id)
+	/* ownerID, err := s.repo.FindOwnerID(ctx, id)
 	if err != nil {
 		return translateError(c, err, "gagal mengambil data student")
-	}
-	if !CanAccessStudent(current, ownerID, s.perms, "student:update:any") {
+	} */
+	if !CanAccessStudent(current, &id, s.perms, "student:update:any") {
 		return helper.Fail(c, fiber.StatusForbidden,
 			"tidak berhak mengubah data student lain")
 	}
@@ -198,11 +200,11 @@ func (s *StudentService) Patch(c *fiber.Ctx) error {
 
 	// Pemeriksaan hak dilakukan sebelum query Update untuk mencegah
 	// timing attack membedakan id yang ada dari yang tidak ada.
-	ownerID, err := s.repo.FindOwnerID(ctx, id)
+	/* ownerID, err := s.repo.FindOwnerID(ctx, id)
 	if err != nil {
 		return translateError(c, err, "gagal mengambil data student")
-	}
-	if !CanAccessStudent(current, ownerID, s.perms, "student:update:any") {
+	} */
+	if !CanAccessStudent(current, &id, s.perms, "student:update:any") {
 		return helper.Fail(c, fiber.StatusForbidden,
 			"tidak berhak mengubah data student lain")
 	}
@@ -319,6 +321,7 @@ func translateError(c *fiber.Ctx, err error, generalMessage string) error {
 	case errors.Is(err, repository.ErrDuplicate):
 		return helper.Fail(c, fiber.StatusConflict, "nim sudah dipakai")
 	default:
+		slog.Error("student_service_error", "message", generalMessage, "error", err.Error(), "path", c.Path(), "method", c.Method())
 		return helper.Fail(c, fiber.StatusInternalServerError, generalMessage)
 	}
 }

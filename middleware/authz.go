@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 
 	"latihan-fiber/helper"
@@ -17,6 +19,7 @@ import (
 func RequirePermission(perms *helper.PermissionSet, permission string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user, ok := helper.CurrentUser(c)
+		fmt.Println("user", user, "ok", ok)
 		if !ok {
 			// Sampai di sini tanpa identitas berarti RequireAuth belum
 			// dipasang. Tolak, jangan diloloskan.

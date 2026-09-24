@@ -21,11 +21,12 @@ import (
 // sepenuhnya jatuh kepada permission.
 func CanAccessStudent(
 	current model.AuthStudents,
-	ownerID *int,
+	targetId *int,
 	perms *helper.PermissionSet,
 	anyPermission string,
 ) bool {
-	if ownerID != nil && current.StudentID == *ownerID {
+	// fmt.Println("CanAccessStudent: current", current, "targetId", targetId, "anyPermission", anyPermission)
+	if targetId != nil && current.StudentID == *targetId {
 		return true
 	}
 	return perms.Can(current.Role, anyPermission)
