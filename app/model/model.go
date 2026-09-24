@@ -12,6 +12,9 @@ type Student struct {
 	Role      string    `json:"role"`
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`
+	// OwnerID menandai student yang mendaftarkan data ini.
+	// Dikirim ke JSON hanya bila tersedia; data lama belum memiliki pemilik.
+	OwnerID *int `json:"owner_id,omitempty"`
 }
 
 // POST — semua field wajib
@@ -36,6 +39,11 @@ type PatchStudentRequest struct {
 	NIM      *string  `json:"nim,omitempty"`
 	Grade    *float64 `json:"grade,omitempty"`
 	IsActive *bool    `json:"is_active,omitempty"`
+}
+
+// AssignRoleRequest dipakai endpoint PATCH /students/:id/role.
+type AssignRoleRequest struct {
+	Role string `json:"role"`
 }
 
 // Amplop baku untuk semua respons (sukses maupun gagal)

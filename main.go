@@ -59,7 +59,7 @@ func main() {
 	permissions := helper.NewPermissionSet(rawPermissions)
 	logger.Info("permission dimuat", slog.Any("roles", permissions.KnownRoles()))
 
-	studentService := service.NewStudentService(studentRepository)
+	studentService := service.NewStudentService(studentRepository, permissions)
 	authService := service.NewAuthService(
 		studentRepository, tokenRepository, jwtManager,
 		time.Duration(config.GetEnvInt("JWT_REFRESH_TTL_DAYS", 7))*24*time.Hour,

@@ -47,6 +47,9 @@ func Register(app *fiber.App, deps Dependencies) {
 	student.Post("/",
 		middleware.RequirePermission(perms, "student:create"),
 		deps.StudentService.Create)
+	student.Patch("/:id/role",
+		middleware.RequirePermission(perms, "student:role:assign"),
+		deps.StudentService.AssignRole)
 	student.Delete("/:id",
 		middleware.RequirePermission(perms, "student:delete"),
 		deps.StudentService.Delete)

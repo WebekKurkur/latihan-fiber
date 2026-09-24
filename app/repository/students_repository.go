@@ -24,9 +24,11 @@ var (
 type StudentRepository interface {
 	FindAll(ctx context.Context, q model.ListQuery) ([]model.Student, int, error)
 	FindByID(ctx context.Context, id int) (model.Student, error)
+	FindOwnerID(ctx context.Context, id int) (*int, error)
 	FindByUsername(ctx context.Context, name string) (model.Student, error)
 	Create(ctx context.Context, s model.Student) (model.Student, error)
 	Update(ctx context.Context, s model.Student) (model.Student, error)
+	UpdateRole(ctx context.Context, id int, role string) (model.Student, error)
 	Delete(ctx context.Context, id int) error
 }
 
@@ -152,11 +154,19 @@ func (r *studentPostgresRepository) Create(
 ) (model.Student, error) {
 	// RETURNING membuat id dan created_at hasil buatan basis data
 	// langsung ikut kembali, tanpa perlu query kedua.
+	//
+	// owner_id ikut disimpan di sini, namun nilai yang dipakai selalu
+	// berasal dari service (diambil dari token). Nilai dari body request
+	// tidak pernah menyentuh query ini.
+	var ownerID any
+	if s.OwnerID != nil {
+		ownerID = *s.OwnerID
+	}
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO students (name, "NIM", "Grade", password, role, is_active)
-		 VALUES ($1, $2, $3, $4, $5, $6)
+		`INSERT INTO students (name, "NIM", "Grade", password, role, is_active, owner_id)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id, created_at`,
-		s.Name, s.NIM, s.Grade, s.Password, s.Role, s.IsActive,
+		s.Name, s.NIM, s.Grade, s.Password, s.Role, s.IsActive, ownerID,
 	).Scan(&s.ID, &s.CreatedAt)
 
 	if err != nil {
@@ -167,6 +177,26 @@ func (r *studentPostgresRepository) Create(
 	}
 
 	return s, nil
+}
+
+// FindOwnerID hanya mengambil kolom owner_id. Dipakai oleh service
+// untuk pemeriksaan kepemilikan SEBELUM data lengkap dibaca, sehingga
+// serangan timing tidak dapat membedakan id yang ada dari yang tidak.
+func (r *studentPostgresRepository) FindOwnerID(
+	ctx context.Context, id int,
+) (*int, error) {
+	var ownerID *int
+	err := r.pool.QueryRow(ctx,
+		`SELECT owner_id FROM students WHERE id = $1`, id,
+	).Scan(&ownerID)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("mengambil owner student: %w", err)
+	}
+	return ownerID, nil
 }
 
 func (r *studentPostgresRepository) Update(
@@ -193,6 +223,34 @@ func (r *studentPostgresRepository) Update(
 		return model.Student{}, fmt.Errorf("memperbarui student: %w", err)
 	}
 
+	return s, nil
+}
+
+// UpdateRole sengaja dipisah dari Update. Mengubah role adalah tindakan
+// istimewa yang dijaga permission tersendiri, sehingga tidak boleh ikut
+// terbawa oleh endpoint perubahan data biasa.
+//
+// Kolom password sengaja tidak dikembalikan: endpoint perubahan role
+// tidak perlu dan tidak boleh membocorkan hash password.
+func (r *studentPostgresRepository) UpdateRole(
+	ctx context.Context, id int, role string,
+) (model.Student, error) {
+	var s model.Student
+	err := r.pool.QueryRow(ctx,
+		`UPDATE students
+         SET role = $1
+         WHERE id = $2
+         RETURNING id, name, "NIM", "Grade", role, is_active, created_at`,
+		role, id,
+	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Role,
+		&s.IsActive, &s.CreatedAt)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return model.Student{}, ErrNotFound
+		}
+		return model.Student{}, fmt.Errorf("mengubah role student: %w", err)
+	}
 	return s, nil
 }
 

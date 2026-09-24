@@ -1,10 +1,11 @@
 -- Permission khusus untuk entity students.
 INSERT INTO permissions (name, description) VALUES
-    ('student:list',       'Melihat daftar seluruh student'),
-    ('student:read:any',   'Melihat data student mana pun'),
-    ('student:create',     'Mendaftarkan student baru'),
-    ('student:update:any', 'Mengubah data student mana pun'),
-    ('student:delete',     'Menghapus student')
+    ('student:list',         'Melihat daftar seluruh student'),
+    ('student:read:any',     'Melihat data student mana pun'),
+    ('student:create',       'Mendaftarkan student baru'),
+    ('student:update:any',   'Mengubah data student mana pun'),
+    ('student:delete',       'Menghapus student'),
+    ('student:role:assign',  'Mengubah role milik student lain')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO role_permissions (role_name, permission_name) VALUES
@@ -13,6 +14,7 @@ INSERT INTO role_permissions (role_name, permission_name) VALUES
     ('admin', 'student:create'),
     ('admin', 'student:update:any'),
     ('admin', 'student:delete'),
+    ('admin', 'student:role:assign'),
     ('staff', 'student:list'),
     ('staff', 'student:read:any'),
     ('staff', 'student:create')
