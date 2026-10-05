@@ -28,6 +28,9 @@ func (s studentRepoStub) FindByID(_ context.Context, id int) (model.Student, err
 func (studentRepoStub) FindAll(context.Context, model.ListQuery) ([]model.Student, int, error) {
 	panic("tidak dipakai di test ini")
 }
+func (studentRepoStub) FindAfterCursor(context.Context, model.CursorQuery) ([]model.Student, error) {
+	panic("tidak dipakai di test ini")
+}
 func (studentRepoStub) FindOwnerID(context.Context, int) (*int, error) {
 	panic("tidak dipakai di test ini")
 }

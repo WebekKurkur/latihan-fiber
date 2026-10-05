@@ -3,8 +3,8 @@ package model
 import "time"
 
 type RegisterRequest struct {
-	Name     string `json:"username" validate:"required,min=3,max=30,username"`
-	NIM      string `json:"nim"      validate:"required,nim,max=120"`
+	Name     string `json:"name"     validate:"required,min=3,max=30,username"`
+	NIM      string `json:"nim"      validate:"required,min=3,max=30,alphanum"`
 	Password string `json:"password" validate:"required,max=72,strongpassword"`
 	// Perhatikan: TIDAK ADA field Role di sini. Bila ada, siapa pun
 	// dapat mendaftar sebagai admin (kerentanan mass assignment).

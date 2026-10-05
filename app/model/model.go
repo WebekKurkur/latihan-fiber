@@ -17,32 +17,31 @@ type Student struct {
 	OwnerID *int `json:"owner_id,omitempty"`
 }
 
-// Mulai pertemuan ini, aturan validasi ditulis sebagai tag pada struct. 
-// Aturan dan bentuk data berada pada baris yang sama, sehingga menambah 
-// satu field tanpa aturannya menjadi kelalaian yang langsung terlihat. 
-type CreateStudentRequest struct { 
-    Name   string  `json:"username" validate:"required,min=3,max=30,alphanum"` 
-    NIM    string  `json:"email"    validate:"required,email,max=120"` 
-    Grade  float64 `json:"password" validate:"required,min=8,max=72,nospace"` 
-} 
+// Mulai pertemuan ini, aturan validasi ditulis sebagai tag pada struct.
+// Aturan dan bentuk data berada pada baris yang sama, sehingga menambah
+// satu field tanpa aturannya menjadi kelalaian yang langsung terlihat.
+type CreateStudentRequest struct {
+	Name  string  `json:"name"     validate:"required,min=3,max=30,alphanum"`
+	NIM   string  `json:"nim"      validate:"required,min=3,max=30,alphanum"`
+	Grade float64 `json:"grade"    validate:"required,min=0,max=100"`
+}
 
-  
-type ReplaceStudentRequest struct { 
-    Name   string  `json:"name"  validate:"required,min=3,max=30,alphanum"` 
-    NIM    string  `json:"nim"    validate:"required,email,max=120"` 
-    Grade  float64 `json:"grade" validate:"required,min=0,max=100"` 
+type ReplaceStudentRequest struct {
+	Name     string  `json:"name"      validate:"required,min=3,max=30,alphanum"`
+	NIM      string  `json:"nim"       validate:"required,min=3,max=30,alphanum"`
+	Grade    float64 `json:"grade"     validate:"required,min=0,max=100"`
 	IsActive bool    `json:"is_active"`
-} 
-  
-// Pada PATCH, pointer membedakan "tidak dikirim" (nil) dari "dikirim 
-// bernilai kosong". omitnil dipilih karena ia menyatakan maksud yang 
-// sebenarnya: lewati hanya bila nil. 
-type PatchStudentRequest struct { 
-    Name     *string  `json:"name,omitempty"  validate:"omitnil,min=3,max=30,alphanum"` 
-    NIM      *string  `json:"nim,omitempty"    validate:"omitnil,email,max=120"` 
-    Grade    *float64 `json:"grade,omitempty" validate:"omitnil,min=0,max=100"` 
-    IsActive *bool    `json:"is_active,omitempty"` 
-} 
+}
+
+// Pada PATCH, pointer membedakan "tidak dikirim" (nil) dari "dikirim
+// bernilai kosong". omitnil dipilih karena ia menyatakan maksud yang
+// sebenarnya: lewati hanya bila nil.
+type PatchStudentRequest struct {
+	Name     *string  `json:"name,omitempty"      validate:"omitnil,min=3,max=30,alphanum"`
+	NIM      *string  `json:"nim,omitempty"       validate:"omitnil,min=3,max=30,alphanum"`
+	Grade    *float64 `json:"grade,omitempty"     validate:"omitnil,min=0,max=100"`
+	IsActive *bool    `json:"is_active,omitempty"`
+}
 
 // AssignRoleRequest dipakai endpoint PATCH /students/:id/role.
 type AssignRoleRequest struct {

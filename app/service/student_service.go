@@ -183,7 +183,7 @@ func (s *StudentService) Replace(c *fiber.Ctx) error {
 			"body harus berupa JSON yang valid")
 	}
 
-	if errs := ValidateReplace(req); len(errs) > 0 {
+	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
 	}
 
@@ -244,10 +244,11 @@ func (s *StudentService) Patch(c *fiber.Ctx) error {
 		return translateError(err, "student")
 	}
 
-	student, errs := ApplyPatch(existing, req)
-	if len(errs) > 0 {
+	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
 	}
+
+	student := ApplyPatch(existing, req)
 
 	student, err = s.repo.Update(ctx, student)
 	if err != nil {
