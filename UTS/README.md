@@ -276,3 +276,4 @@ Status code yang digunakan sistem mencakup `200`, `201`, `204`, `401`, `403`, `4
 - Helmet menambahkan security headers dan Recover mencegah panic mematikan server.
 - Request ID dan structured logging membantu audit tanpa mencatat password atau token.
 - Log dirotasi menggunakan `lumberjack`; file `.env`, log, dan binary diabaikan Git.
+
