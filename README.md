@@ -88,16 +88,18 @@ Aplikasi membaca variabel-variabel berikut lewat pustaka `godotenv`. Jika
 variabel tidak diisi, aplikasi menggunakan nilai bawaan yang tertera pada
 kolom **Default** di bawah.
 
-| Variabel       | Default              | Keterangan                                                                                  |
-|----------------|----------------------|---------------------------------------------------------------------------------------------|
-| `APP_PORT`     | `3000`               | Port HTTP yang dipakai server Fiber untuk listen.                                           |
-| `DB_HOST`      | `localhost`          | Host PostgreSQL.                                                                            |
-| `DB_PORT`      | `port postgres`      | Port PostgreSQL.                                                                            |
-| `DB_USER`      | `user postgres`      | User PostgreSQL yang dipakai untuk koneksi.                                                 |
-| `DB_PASSWORD`  | `""` (kosong)        | Kata sandi user PostgreSQL. Wajib diisi jika server PostgreSQL mengaktifkan autentikasi.    |
-| `DB_NAME`      | `database`           | Nama database yang dipakai aplikasi (lihat langkah 1 pada bagian "Cara Menyiapkan Basis Data"). |
-| `DB_SSLMODE`   | `disable`            | Mode SSL untuk koneksi. Gunakan `disable` untuk pengembangan lokal, `require` untuk produksi.|
-| `DB_MAX_CONNS` | `10`                 | Batas atas jumlah koneksi di pool pgxpool.                                                  |
+| Variabel         | Default                       | Keterangan |
+|------------------|-------------------------------|------------|
+| `APP_PORT`       | `3000`                        | Port HTTP Fiber. |
+| `DB_HOST`        | `localhost`                   | Host PostgreSQL. |
+| `DB_PORT`        | `port postgres`                        | Port PostgreSQL. |
+| `DB_USER`        | `user postgres`                    | User PostgreSQL. |
+| `DB_PASSWORD`    | kosong                        | Password user PostgreSQL. |
+| `DB_NAME`        | `database`           | Database PostgreSQL. |
+| `DB_SSLMODE`     | `disable`                     | Mode SSL PostgreSQL. |
+| `DB_MAX_CONNS`   | `10`                          | Batas koneksi pool PostgreSQL. |
+| `MONGO_URI`      | `URI mongo`   | URI MongoDB lokal atau Atlas. |
+| `MONGO_DATABASE` | `database`           | Nama database dokumen MongoDB. |
+| `MONGO_MAX_POOL` | `20`                          | Batas atas koneksi MongoDB. |
 
-Berkas `.env` tidak boleh di-commit ke repositori — pastikan sudah masuk
-`.gitignore`.
+Berkas `.env` tidak boleh di-commit ke repositori — pastikan sudah masuk `.gitignore`.
