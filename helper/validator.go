@@ -45,7 +45,7 @@ func newValidator() *validator.Validate {
 		return true
 	})
 	_ = v.RegisterValidation("strongpassword", func(fl validator.FieldLevel) bool {
-		return passwordStrength(fl.Field().String()) != ""
+		return passwordStrength(fl.Field().String()) == ""
 	})
 
 	return v
@@ -91,13 +91,19 @@ func messageFor(fe validator.FieldError) string {
 	case "email":
 		return "format email tidak valid"
 	case "min":
-		if fe.Kind() == reflect.String {
+		switch fe.Kind() {
+		case reflect.String:
 			return "minimal " + fe.Param() + " karakter"
+		case reflect.Slice, reflect.Array, reflect.Map:
+			return "minimal " + fe.Param() + " item"
 		}
 		return "nilai minimal " + fe.Param()
 	case "max":
-		if fe.Kind() == reflect.String {
+		switch fe.Kind() {
+		case reflect.String:
 			return "maksimal " + fe.Param() + " karakter"
+		case reflect.Slice, reflect.Array, reflect.Map:
+			return "maksimal " + fe.Param() + " item"
 		}
 		return "nilai maksimal " + fe.Param()
 	case "alphanum":
