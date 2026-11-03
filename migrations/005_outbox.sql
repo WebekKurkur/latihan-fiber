@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS outbox_unpublished_idx
 CREATE TABLE IF NOT EXISTS notifications ( 
     id         BIGSERIAL    PRIMARY KEY, 
     outbox_id  BIGINT       NOT NULL, 
-    user_id    INTEGER      NOT NULL REFERENCES students(id) ON DELETE CASCADE, 
+    student_id INTEGER      NOT NULL REFERENCES students(id) ON DELETE CASCADE, 
     channel    VARCHAR(20)  NOT NULL, 
     subject    VARCHAR(200) NOT NULL, 
     body       TEXT         NOT NULL, 
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     CONSTRAINT notifications_outbox_unique UNIQUE (outbox_id) 
 ); 
 
-CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, outbox_id DESC); 
+CREATE INDEX IF NOT EXISTS notifications_student_idx ON notifications (student_id, outbox_id DESC); 
   
 INSERT INTO permissions (name, description) VALUES 
     ('queue:monitor', 'Melihat keadaan outbox dan queue task') 
