@@ -1,3 +1,5 @@
 .env
 logs
 latihan-fiber.exe
+ignore
+.vscode
