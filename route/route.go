@@ -14,13 +14,15 @@ import (
 )
 
 type Dependencies struct {
-	Pool             *pgxpool.Pool
-	Mongo            *mongo.Client
-	JWT              *helper.JWTManager
-	Permissions      *helper.PermissionSet
-	StudentService   *service.StudentService
-	AuthService      *service.AuthService
-	PortfolioService *service.PortfolioService
+	Pool                *pgxpool.Pool
+	Mongo               *mongo.Client
+	JWT                 *helper.JWTManager
+	Permissions         *helper.PermissionSet
+	StudentService      *service.StudentService
+	AuthService         *service.AuthService
+	PortfolioService    *service.PortfolioService
+	CourseService       *service.CourseService
+	NotificationService *service.NotificationService
 }
 
 func Register(app *fiber.App, deps Dependencies) {
@@ -53,6 +55,29 @@ func Register(app *fiber.App, deps Dependencies) {
 
 	portfolios := api.Group("/portfolios", middleware.RequireAuth(deps.JWT))
 	portfolios.Get("/stats/technologies", deps.PortfolioService.TopTechnologies)
+
+	// Modul 9: kelas dan KRS. Route statis (/mine) didaftarkan lebih dulu
+	// agar tidak tertangkap oleh route dinamis /:id.
+	courses := api.Group("/courses", middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	courses.Get("/", deps.CourseService.List)
+	courses.Get("/mine", deps.CourseService.Mine)
+	courses.Get("/:id", deps.CourseService.Get)
+	courses.Post("/:id/enroll", deps.CourseService.Enroll)
+	courses.Delete("/:id/enroll", deps.CourseService.Drop)
+	courses.Patch("/:id", middleware.RequirePermission(perms, "course:manage"), deps.CourseService.UpdateQuota)
+
+	enrollments := api.Group("/enrollments", middleware.RequireJSON, middleware.RequireAuth(deps.JWT))
+	enrollments.Post("/swap", deps.CourseService.Swap)
+
+	// Modul 11: notifikasi yang sudah dikirim ke mahasiswa.
+	notifications := api.Group("/notifications", middleware.RequireAuth(deps.JWT))
+	notifications.Get("/mine", deps.NotificationService.Mine)
+
+	// Modul 11: pemantauan queue. Hanya untuk admin dengan izin queue:monitor.
+	admin := api.Group("/admin", middleware.RequireAuth(deps.JWT))
+	admin.Get("/queue",
+		middleware.RequirePermission(perms, "queue:monitor"),
+		deps.NotificationService.Monitor)
 }
 
 func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
