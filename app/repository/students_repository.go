@@ -17,6 +17,10 @@ import (
 var (
 	ErrNotFound  = errors.New("data tidak ditemukan")
 	ErrDuplicate = errors.New("data sudah ada")
+	// ErrEmailDuplicate dilepas agar pemanggil dapat membedakan
+	// "email sudah dipakai" dari "nama/NIM sudah dipakai". Keduanya
+	// sama-sama 409, tetapi pesannya berbeda.
+	ErrEmailDuplicate = errors.New("email sudah dipakai")
 )
 
 // StudentRepository adalah KONTRAK penyimpanan data student.
@@ -148,10 +152,11 @@ func (r *studentPostgresRepository) FindByID(
 	var s model.Student
 
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, name, "NIM", "Grade", password, role, is_active, created_at
+		`SELECT id, name, "NIM", "Grade", password, role, is_active, created_at,
+		        COALESCE(email, '')
          FROM students WHERE id = $1`, id,
 	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Password, &s.Role,
-		&s.IsActive, &s.CreatedAt)
+		&s.IsActive, &s.CreatedAt, &s.Email)
 
 	if err != nil {
 		// pgx.ErrNoRows diterjemahkan menjadi error milik kita sendiri.
@@ -178,13 +183,18 @@ func (r *studentPostgresRepository) Create(
 		ownerID = *s.OwnerID
 	}
 	err := r.pool.QueryRow(ctx,
-		`INSERT INTO students (name, "NIM", "Grade", password, role, is_active, owner_id)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`INSERT INTO students (name, "NIM", "Grade", password, role, is_active, owner_id, email)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''))
          RETURNING id, created_at`,
-		s.Name, s.NIM, s.Grade, s.Password, s.Role, s.IsActive, ownerID,
+		s.Name, s.NIM, s.Grade, s.Password, s.Role, s.IsActive, ownerID, s.Email,
 	).Scan(&s.ID, &s.CreatedAt)
 
 	if err != nil {
+		// Email yang bentrok dibedakan dari nama/NIM yang bentrok,
+		// karena keduanya sama-sama pelanggaran UNIQUE.
+		if isEmailUniqueViolation(err) {
+			return model.Student{}, ErrEmailDuplicate
+		}
 		if isUniqueViolation(err) {
 			return model.Student{}, ErrDuplicate
 		}
@@ -273,9 +283,9 @@ func (r *studentPostgresRepository) Update(
 		`UPDATE students
          SET name = $1, "NIM" = $2, "Grade" = $3, is_active = $4
          WHERE id = $5
-         RETURNING id, name, "NIM", "Grade", is_active, created_at`,
+         RETURNING id, name, "NIM", "Grade", is_active, created_at, COALESCE(email, '')`,
 		s.Name, s.NIM, s.Grade, s.IsActive, s.ID,
-	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.IsActive, &s.CreatedAt)
+	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.IsActive, &s.CreatedAt, &s.Email)
 
 	if err != nil {
 		// Tidak ada baris yang dikembalikan berarti id-nya memang tidak ada.
@@ -305,10 +315,11 @@ func (r *studentPostgresRepository) UpdateRole(
 		`UPDATE students
          SET role = $1
          WHERE id = $2
-         RETURNING id, name, "NIM", "Grade", role, is_active, created_at`,
+         RETURNING id, name, "NIM", "Grade", role, is_active, created_at,
+                   COALESCE(email, '')`,
 		role, id,
 	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Role,
-		&s.IsActive, &s.CreatedAt)
+		&s.IsActive, &s.CreatedAt, &s.Email)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -339,7 +350,19 @@ func (r *studentPostgresRepository) Delete(ctx context.Context, id int) error {
 func isUniqueViolation(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
+		return pgErr.Code == codeUniqueViolation
+	}
+	return false
+}
+
+// isEmailUniqueViolation memeriksa apakah pelanggaran UNIQUE itu datang
+// dari unique index pada kolom email. Nama constraint-nya ikut diperiksa,
+// sebab nama/NIM yang bentrok juga menghasilkan kode 23505 yang sama.
+func isEmailUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == codeUniqueViolation &&
+			pgErr.ConstraintName == "students_email_unique"
 	}
 	return false
 }
@@ -352,10 +375,11 @@ func (r *studentPostgresRepository) FindByUsername(
 	var s model.Student
 
 	err := r.pool.QueryRow(ctx,
-		`SELECT id, name, "NIM", "Grade", password, role, is_active, created_at
+		`SELECT id, name, "NIM", "Grade", password, role, is_active, created_at,
+		        COALESCE(email, '')
          FROM students WHERE LOWER(name) = LOWER($1)`, username,
 	).Scan(&s.ID, &s.Name, &s.NIM, &s.Grade, &s.Password, &s.Role,
-		&s.IsActive, &s.CreatedAt)
+		&s.IsActive, &s.CreatedAt, &s.Email)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -48,6 +48,7 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 
 	req.Name = strings.TrimSpace(req.Name)
 	req.NIM = strings.TrimSpace(req.NIM)
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
 	if errs := helper.ValidateStruct(req); errs != nil {
 		return helper.Validation(errs)
@@ -60,6 +61,13 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 		return helper.Internal(err)
 	}
 
+	// Email boleh dikosongkan. Bila kosong, server membuatkan alamat
+	// turunan dari nama sehingga setiap mahasiswa tetap punya satu
+	// alamat tujuan notifikasi (Modul 11).
+	if req.Email == "" {
+		req.Email = DeriveEmail(req.Name)
+	}
+
 	// Role selalu ditentukan server, tidak pernah diambil dari request.
 	created, err := s.student.Create(ctx, model.Student{
 		Name:     req.Name,
@@ -67,10 +75,14 @@ func (s *AuthService) Register(c *fiber.Ctx) error {
 		Password: hashed,
 		Role:     "user",
 		IsActive: true,
+		Email:    req.Email,
 	})
 	if err != nil {
 		if errors.Is(err, repository.ErrDuplicate) {
 			return helper.Conflict("username sudah dipakai")
+		}
+		if errors.Is(err, repository.ErrEmailDuplicate) {
+			return helper.Conflict("email sudah dipakai")
 		}
 		return helper.Internal(err)
 	}
@@ -236,4 +248,28 @@ func (s *AuthService) issueTokenPair(
 		TokenType:    "Bearer",
 		ExpiresIn:    int(s.jwt.AccessTTL().Seconds()),
 	}, nil
+}
+
+// DeriveEmail membuat alamat email turunan dari nama mahasiswa.
+//
+// Alamat ini dipakai ketika pemohon tidak mengirim email. Karena nama
+// mahasiswa dijamin unik, alamat turunan ini juga unik. Karakter yang
+// bukan huruf atau angka diganti titik, karena titik adalah karakter
+// yang sah pada nama bagian lokal email.
+func DeriveEmail(name string) string {
+	local := strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			return r
+		case r >= 'A' && r <= 'Z':
+			return r + ('a' - 'A')
+		default:
+			return '.'
+		}
+	}, name)
+	local = strings.Trim(local, ".")
+	if local == "" {
+		local = "mahasiswa"
+	}
+	return local + "@student.unair.ac.id"
 }

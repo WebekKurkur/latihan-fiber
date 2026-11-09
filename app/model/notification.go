@@ -12,6 +12,10 @@ const (
 	EventEnrollmentCreated = "enrollment.created"
 	EventEnrollmentDropped = "enrollment.dropped"
 	EventEnrollmentSwapped = "enrollment.swapped"
+	// EventQuotaChanged dikirim ketika admin mengubah kuota sebuah kelas.
+	// Berbeda dengan event KRS, event ini menyangkut SELURUH peserta
+	// kelas, bukan satu orang.
+	EventQuotaChanged = "course.quota_changed"
 )
 
 // TaskSendNotification adalah nama JENIS task (task type); worker memakainya untuk
@@ -35,6 +39,11 @@ type EnrollmentEvent struct {
 	CourseName     string `json:"course_name"`
 	FromCourseCode string `json:"from_course_code,omitempty"`
 	FromCourseName string `json:"from_course_name,omitempty"`
+	// OldQuota dan NewQuota hanya diisi pada event perubahan kuota.
+	// Keduanya opsional (omitempty) supaya payload event KRS yang lama
+	// tetap dapat dibaca oleh worker versi sekarang.
+	OldQuota int `json:"old_quota,omitempty"`
+	NewQuota int `json:"new_quota,omitempty"`
 }
 
 // OutboxEvent adalah satu baris tabel outbox.

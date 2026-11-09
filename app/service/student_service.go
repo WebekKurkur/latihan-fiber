@@ -137,6 +137,9 @@ func (s *StudentService) Create(c *fiber.Ctx) error {
 		Grade:    req.Grade,
 		IsActive: true,
 		OwnerID:  &owner,
+		// Email diturunkan dari nama agar student yang dibuat admin
+		// tetap punya alamat tujuan notifikasi KRS (Modul 11).
+		Email: DeriveEmail(req.Name),
 	})
 	if err != nil {
 		return translateError(err, "student")
@@ -346,6 +349,8 @@ func translateError(err error, entity string) error {
 		return helper.NotFound(entity + " tidak ditemukan")
 	case errors.Is(err, repository.ErrDuplicate):
 		return helper.Conflict("nim sudah dipakai")
+	case errors.Is(err, repository.ErrEmailDuplicate):
+		return helper.Conflict("email sudah dipakai")
 	default:
 		// Tidak dikenali. Modul Bagian A menjamin "fail closed" — bila
 		// ragu, jawab 500 dengan pesan seragam. Pesan asli tersimpan

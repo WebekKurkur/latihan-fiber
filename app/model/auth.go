@@ -6,8 +6,11 @@ type RegisterRequest struct {
 	Name     string `json:"name"     validate:"required,min=3,max=30,username"`
 	NIM      string `json:"nim"      validate:"required,min=3,max=30,alphanum"`
 	Password string `json:"password" validate:"required,max=72,strongpassword"`
+	// Email bersifat OPSIONAL: alamat tujuan notifikasi KRS (Modul 11).
+	// Bila dikosongkan, server membuatkan alamat turunan dari nama.
 	// Perhatikan: TIDAK ADA field Role di sini. Bila ada, siapa pun
 	// dapat mendaftar sebagai admin (kerentanan mass assignment).
+	Email string `json:"email" validate:"omitempty,email"`
 }
 
 type LoginRequest struct {

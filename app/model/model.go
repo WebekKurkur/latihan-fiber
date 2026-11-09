@@ -15,6 +15,10 @@ type Student struct {
 	// OwnerID menandai student yang mendaftarkan data ini.
 	// Dikirim ke JSON hanya bila tersedia; data lama belum memiliki pemilik.
 	OwnerID *int `json:"owner_id,omitempty"`
+	// Email adalah alamat tujuan notifikasi KRS (Modul 11).
+	// Kosong berarti belum punya alamat; notifikasi untuk student itu
+	// tidak dapat dikirim dan dilaporkan sebagai kegagalan permanen.
+	Email string `json:"email,omitempty"`
 }
 
 // Mulai pertemuan ini, aturan validasi ditulis sebagai tag pada struct.
