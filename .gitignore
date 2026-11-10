@@ -1,5 +1,8 @@
 .env
+.env.test
 logs
 latihan-fiber.exe
 ignore
 .vscode
+coverage.out
+coverage

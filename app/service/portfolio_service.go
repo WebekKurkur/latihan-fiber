@@ -36,11 +36,8 @@ func (s *PortfolioService) Get(c *fiber.Ctx) error {
 		return err
 	}
 	portfolio, err := s.portfolios.FindByStudentID(ctx, studentID)
-	if errors.Is(err, repository.ErrPortfolioNotFound) {
-		return helper.NotFound("portofolio tidak ditemukan")
-	}
 	if err != nil {
-		return helper.Internal(err)
+		return translatePortfolioError(err)
 	}
 	return helper.Ok(c, "portofolio berhasil diambil", portfolio)
 }
@@ -81,7 +78,7 @@ func (s *PortfolioService) Replace(c *fiber.Ctx) error {
 	}
 	portfolio, err := s.portfolios.Replace(ctx, model.StudentPortfolio{StudentID: studentID, Headline: req.Headline, Bio: req.Bio, Projects: projects, Certificates: certificates})
 	if err != nil {
-		return helper.Internal(err)
+		return translatePortfolioError(err)
 	}
 	return helper.Ok(c, "portofolio berhasil disimpan", portfolio)
 }
@@ -106,13 +103,8 @@ func (s *PortfolioService) AddProject(c *fiber.Ctx) error {
 		return helper.Validation(fields)
 	}
 	portfolio, err := s.portfolios.AddProject(ctx, studentID, model.PortfolioProject{Title: req.Title, Technologies: req.Technologies, Link: req.Link, Year: req.Year})
-	switch {
-	case errors.Is(err, repository.ErrPortfolioProjectLimit):
-		return helper.Conflict("jumlah proyek sudah mencapai batas 20")
-	case errors.Is(err, repository.ErrPortfolioNotFound):
-		return helper.NotFound("portofolio tidak ditemukan")
-	case err != nil:
-		return helper.Internal(err)
+	if err != nil {
+		return translatePortfolioError(err)
 	}
 	return helper.Ok(c, "proyek berhasil ditambahkan", portfolio)
 }
@@ -129,13 +121,7 @@ func (s *PortfolioService) DeleteProject(c *fiber.Ctx) error {
 	}
 	projectID := c.Params("projectId")
 	if err := s.portfolios.DeleteProject(ctx, studentID, projectID); err != nil {
-		if errors.Is(err, repository.ErrPortfolioInvalidProjectID) {
-			return helper.BadRequest("id proyek tidak valid")
-		}
-		if errors.Is(err, repository.ErrPortfolioNotFound) {
-			return helper.NotFound("portofolio atau proyek tidak ditemukan")
-		}
-		return helper.Internal(err)
+		return translatePortfolioError(err)
 	}
 	return helper.NoContent(c)
 }
@@ -159,13 +145,31 @@ func (s *PortfolioService) authorizeAndCheckStudent(ctx context.Context, c *fibe
 		return helper.Forbidden("tidak berhak mengakses portofolio student lain")
 	}
 	_, err := s.students.FindByID(ctx, studentID)
-	if errors.Is(err, repository.ErrNotFound) {
-		return helper.NotFound("student tidak ditemukan")
-	}
 	if err != nil {
-		return helper.Internal(err)
+		return translatePortfolioError(err)
 	}
 	return nil
+}
+
+// translatePortfolioError menerjemahkan error dari repository menjadi AppError
+// dengan status HTTP dan kode yang konsisten untuk seluruh endpoint portofolio.
+func translatePortfolioError(err error) error {
+	switch {
+	case errors.Is(err, repository.ErrPortfolioInvalidProjectID):
+		return helper.BadRequest("id proyek tidak valid")
+	case errors.Is(err, repository.ErrPortfolioNotFound):
+		return helper.NotFound("portofolio tidak ditemukan")
+	case errors.Is(err, repository.ErrPortfolioProjectLimit):
+		return helper.Conflict("jumlah proyek sudah mencapai batas 20")
+	case errors.Is(err, repository.ErrNotFound):
+		return helper.NotFound("student tidak ditemukan")
+	case errors.Is(err, repository.ErrDuplicate):
+		return helper.Conflict("nim sudah dipakai")
+	case errors.Is(err, repository.ErrEmailDuplicate):
+		return helper.Conflict("email sudah dipakai")
+	default:
+		return helper.Internal(err)
+	}
 }
 
 func decodePortfolioJSON(c *fiber.Ctx, target any) error {

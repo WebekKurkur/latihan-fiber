@@ -13,3 +13,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   
 CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx 
     ON refresh_tokens (student_id); 
+
+ALTER TABLE students
+    ADD COLUMN IF NOT EXISTS password TEXT;
