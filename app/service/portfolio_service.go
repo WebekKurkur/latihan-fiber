@@ -62,9 +62,7 @@ func (s *PortfolioService) Replace(c *fiber.Ctx) error {
 	req.Headline, req.Bio = strings.TrimSpace(req.Headline), strings.TrimSpace(req.Bio)
 	for i := range req.Projects {
 		req.Projects[i].Title = strings.TrimSpace(req.Projects[i].Title)
-		for j := range req.Projects[i].Technologies {
-			req.Projects[i].Technologies[j] = strings.TrimSpace(req.Projects[i].Technologies[j])
-		}
+		req.Projects[i].Technologies = NormalizeTechnologies(req.Projects[i].Technologies)
 	}
 	for i := range req.Certificates {
 		req.Certificates[i].Name = strings.TrimSpace(req.Certificates[i].Name)
@@ -103,9 +101,7 @@ func (s *PortfolioService) AddProject(c *fiber.Ctx) error {
 		return helper.BadRequest("body harus berupa JSON yang valid")
 	}
 	req.Title = strings.TrimSpace(req.Title)
-	for i := range req.Technologies {
-		req.Technologies[i] = strings.TrimSpace(req.Technologies[i])
-	}
+	req.Technologies = NormalizeTechnologies(req.Technologies)
 	if fields := helper.ValidateStruct(req); fields != nil {
 		return helper.Validation(fields)
 	}
