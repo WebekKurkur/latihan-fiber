@@ -205,6 +205,17 @@ func (s *AuthService) Refresh(c *fiber.Ctx) error {
 	return helper.Ok(c, "token berhasil diperbarui", pair)
 }
 
+// Logout godoc
+//
+// @Summary      Keluar dari sesi
+// @Description  Refresh token yang dikirim dicabut. Bila token kosong atau tidak valid, logout tetap dianggap berhasil demi kemudahan pemakai.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.RefreshRequest  true  "Refresh token yang akan dicabut"
+// @Success      200   {object}  model.WebResponse
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Router       /auth/logout [post]
 func (s *AuthService) Logout(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -223,6 +234,15 @@ func (s *AuthService) Logout(c *fiber.Ctx) error {
 	return helper.Ok(c, "logout berhasil", nil)
 }
 
+// Me godoc
+//
+// @Summary      Profil mahasiswa yang sedang login
+// @Description  Mengembalikan data student, role, dan daftar permission yang dimiliki role tersebut.
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  model.WebResponse{data=model.ProfileResponse}
+// @Failure      401  {object}  model.ErrorResponse
+// @Router       /auth/me [get]
 func (s *AuthService) Me(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()

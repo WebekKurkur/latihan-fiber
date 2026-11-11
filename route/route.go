@@ -8,10 +8,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/gofiber/swagger"
+	"latihan-fiber/app/model"
 	"latihan-fiber/app/service"
 	"latihan-fiber/helper"
 	"latihan-fiber/middleware"
+
+	"github.com/gofiber/swagger"
 )
 
 type Dependencies struct {
@@ -92,6 +94,15 @@ func Register(app *fiber.App, deps Dependencies) {
 		deps.NotificationService.Monitor)
 }
 
+// HealthCheck godoc
+//
+// @Summary      Memeriksa kesehatan server dan dependensinya
+// @Description  Menjawab 200 hanya bila PostgreSQL dan MongoDB sama-sama dapat dihubungi. Bila salah satu gagal, jawabannya 503.
+// @Tags         health
+// @Produce      json
+// @Success      200  {object}  model.WebResponse{data=model.HealthStatus}
+// @Failure      503  {object}  model.ErrorResponse  "PostgreSQL atau MongoDB tidak dapat dihubungi"
+// @Router       /health [get]
 func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.UserContext(), 2*time.Second)
@@ -102,6 +113,7 @@ func healthCheck(pool *pgxpool.Pool, mongoClient *mongo.Client) fiber.Handler {
 		if err := mongoClient.Ping(ctx, nil); err != nil {
 			return helper.ServiceUnavailable("MongoDB tidak dapat dihubungi")
 		}
-		return helper.Ok(c, "server, PostgreSQL, dan MongoDB berjalan", fiber.Map{"timestamp": time.Now()})
+		return helper.Ok(c, "server, PostgreSQL, dan MongoDB berjalan",
+			model.HealthStatus{Timestamp: time.Now()})
 	}
 }

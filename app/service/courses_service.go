@@ -119,10 +119,11 @@ func (s *CourseService) Get(c *fiber.Ctx) error {
 
 // Enroll godoc
 //
-// @Summary      Mendaftar ke sebuah kelas
+// @Summary      Mendaftarkan ke sebuah kelas
 // @Description  Mengambil satu kursi dan mencatat event enrollment.created ke outbox dalam SATU transaction.
 // @Description  Kode error 409: COURSE_FULL, ALREADY_ENROLLED, CREDIT_LIMIT_EXCEEDED.
 // @Tags         courses
+// @Accept       json
 // @Produce      json
 // @Param        id   path      int  true  "ID kelas"
 // @Success      201  {object}  model.WebResponse{data=model.Course}

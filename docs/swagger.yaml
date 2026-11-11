@@ -1,5 +1,10 @@
 basePath: /api/v1
 definitions:
+  model.AssignRoleRequest:
+    properties:
+      role:
+        type: string
+    type: object
   model.Course:
     properties:
       code:
@@ -18,6 +23,25 @@ definitions:
         type: integer
       version:
         type: integer
+    type: object
+  model.CreateStudentRequest:
+    properties:
+      grade:
+        maximum: 100
+        minimum: 0
+        type: number
+      name:
+        maxLength: 30
+        minLength: 3
+        type: string
+      nim:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - grade
+    - name
+    - nim
     type: object
   model.CursorMeta:
     properties:
@@ -42,6 +66,11 @@ definitions:
         type: string
       success:
         type: boolean
+    type: object
+  model.HealthStatus:
+    properties:
+      timestamp:
+        type: string
     type: object
   model.LoginRequest:
     properties:
@@ -87,6 +116,23 @@ definitions:
       student_id:
         type: integer
       subject:
+        type: string
+    type: object
+  model.PatchStudentRequest:
+    properties:
+      grade:
+        maximum: 100
+        minimum: 0
+        type: number
+      is_active:
+        type: boolean
+      name:
+        maxLength: 30
+        minLength: 3
+        type: string
+      nim:
+        maxLength: 30
+        minLength: 3
         type: string
     type: object
   model.PortfolioCertificate:
@@ -175,6 +221,21 @@ definitions:
     - technologies
     - title
     - year
+    type: object
+  model.ProfileResponse:
+    properties:
+      generated_at:
+        type: string
+      is_active:
+        type: boolean
+      permissions:
+        items:
+          type: string
+        type: array
+      role:
+        type: string
+      student:
+        $ref: '#/definitions/model.Student'
     type: object
   model.QueueInfo:
     properties:
@@ -265,6 +326,27 @@ definitions:
     required:
     - bio
     - headline
+    type: object
+  model.ReplaceStudentRequest:
+    properties:
+      grade:
+        maximum: 100
+        minimum: 0
+        type: number
+      is_active:
+        type: boolean
+      name:
+        maxLength: 30
+        minLength: 3
+        type: string
+      nim:
+        maxLength: 30
+        minLength: 3
+        type: string
+    required:
+    - grade
+    - name
+    - nim
     type: object
   model.Student:
     properties:
@@ -439,6 +521,56 @@ paths:
           schema:
             $ref: '#/definitions/model.ErrorResponse'
       summary: Login dan mendapatkan pasangan token
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token yang dikirim dicabut. Bila token kosong atau tidak
+        valid, logout tetap dianggap berhasil demi kemudahan pemakai.
+      parameters:
+      - description: Refresh token yang akan dicabut
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.WebResponse'
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Keluar dari sesi
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Mengembalikan data student, role, dan daftar permission yang dimiliki
+        role tersebut.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.ProfileResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Profil mahasiswa yang sedang login
       tags:
       - auth
   /auth/refresh:
@@ -637,6 +769,8 @@ paths:
       tags:
       - courses
     post:
+      consumes:
+      - application/json
       description: |-
         Mengambil satu kursi dan mencatat event enrollment.created ke outbox dalam SATU transaction.
         Kode error 409: COURSE_FULL, ALREADY_ENROLLED, CREDIT_LIMIT_EXCEEDED.
@@ -676,7 +810,7 @@ paths:
             $ref: '#/definitions/model.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Mendaftar ke sebuah kelas
+      summary: Mendaftarkan ke sebuah kelas
       tags:
       - courses
   /courses/mine:
@@ -744,6 +878,29 @@ paths:
       summary: Pindah kelas
       tags:
       - courses
+  /health:
+    get:
+      description: Menjawab 200 hanya bila PostgreSQL dan MongoDB sama-sama dapat
+        dihubungi. Bila salah satu gagal, jawabannya 503.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.HealthStatus'
+              type: object
+        "503":
+          description: PostgreSQL atau MongoDB tidak dapat dihubungi
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Memeriksa kesehatan server dan dependensinya
+      tags:
+      - health
   /notifications/mine:
     get:
       produces:
@@ -836,6 +993,312 @@ paths:
       summary: Statistik teknologi yang paling banyak dipakai
       tags:
       - portfolios
+  /student:
+    get:
+      description: 'Cursor pagination: kirim cursor.next_cursor sebagai parameter
+        cursor untuk halaman berikutnya. Format CSV tersedia bila header Accept: text/csv.'
+      parameters:
+      - default: 10
+        description: Jumlah per halaman, 1 sampai 100
+        in: query
+        name: limit
+        type: integer
+      - description: Saring berdasarkan kata kunci
+        in: query
+        name: search
+        type: string
+      - description: Saring berdasarkan status aktif
+        in: query
+        name: is_active
+        type: boolean
+      - description: 'Cursor: halaman sebelumnya'
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                cursor:
+                  $ref: '#/definitions/model.CursorMeta'
+                data:
+                  items:
+                    $ref: '#/definitions/model.Student'
+                  type: array
+              type: object
+        "400":
+          description: Cursor tidak sah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "406":
+          description: Format yang diminta tidak tersedia
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Daftar seluruh student
+      tags:
+      - student
+    post:
+      consumes:
+      - application/json
+      description: Owner_id (student yang membuat) SELALU diisi dari identitas pemanggil,
+        bukan dari body, sehingga tidak ada celah mass assignment.
+      parameters:
+      - description: Data student
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal; detail per field ada di fields
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Membuat data student baru
+      tags:
+      - student
+  /student/{id}:
+    delete:
+      description: Student yang terkait dengan akun pemanggil tidak boleh dihapus.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Berhasil dihapus; tanpa body
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menghapus data student
+      tags:
+      - student
+    get:
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: ID bukan angka positif
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail satu student
+      tags:
+      - student
+    patch:
+      consumes:
+      - application/json
+      description: Hanya field yang dikirim yang diubah. Field yang tidak dikirim
+        tidak berubah.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Field yang diubah
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PatchStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid atau tidak ada field yang diubah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Memperbarui sebagian data student
+      tags:
+      - student
+    put:
+      consumes:
+      - application/json
+      description: Semua field wajib diisi; field yang tidak dikirim akan ditimpa
+        dengan nilai default.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data student pengganti
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ReplaceStudentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengganti seluruh data student
+      tags:
+      - student
+  /student/{id}/role:
+    patch:
+      consumes:
+      - application/json
+      description: Memerlukan permission student:role:assign. Pemanggil tidak boleh
+        mengubah role-nya sendiri.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Role tidak dikenal atau mengubah role sendiri
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah role seorang student
+      tags:
+      - student
   /students/{id}/portfolio:
     get:
       description: Hanya pemilik portofolio atau pemanggil dengan izin student:read:any.

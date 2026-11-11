@@ -29,6 +29,22 @@ func NewStudentService(
 	return &StudentService{repo: repo, perms: perms}
 }
 
+// List godoc
+//
+// @Summary      Daftar seluruh student
+// @Description  Cursor pagination: kirim cursor.next_cursor sebagai parameter cursor untuk halaman berikutnya. Format CSV tersedia bila header Accept: text/csv.
+// @Tags         student
+// @Produce      json
+// @Param        limit      query  int     false  "Jumlah per halaman, 1 sampai 100"  default(10)
+// @Param        search     query  string  false  "Saring berdasarkan kata kunci"
+// @Param        is_active  query  bool    false  "Saring berdasarkan status aktif"
+// @Param        cursor     query  string  false  "Cursor: halaman sebelumnya"
+// @Success      200  {object}  model.WebResponse{data=[]model.Student,cursor=model.CursorMeta}
+// @Failure      400  {object}  model.ErrorResponse  "Cursor tidak sah"
+// @Failure      403  {object}  model.ErrorResponse
+// @Failure      406  {object}  model.ErrorResponse  "Format yang diminta tidak tersedia"
+// @Security     BearerAuth
+// @Router       /student [get]
 func (s *StudentService) List(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -70,6 +86,19 @@ func (s *StudentService) List(c *fiber.Ctx) error {
 }
 
 // get/students/:id tugas 6
+
+// Get godoc
+//
+// @Summary      Detail satu student
+// @Tags         student
+// @Produce      json
+// @Param        id   path  int  true  "ID student"
+// @Success      200  {object}  model.WebResponse{data=model.Student}
+// @Failure      400  {object}  model.ErrorResponse  "ID bukan angka positif"
+// @Failure      403  {object}  model.ErrorResponse
+// @Failure      404  {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /student/{id} [get]
 func (s *StudentService) Get(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -106,6 +135,20 @@ func (s *StudentService) Get(c *fiber.Ctx) error {
 	return helper.Ok(c, "student ditemukan", student)
 }
 
+// Create godoc
+//
+// @Summary      Membuat data student baru
+// @Description  Owner_id (student yang membuat) SELALU diisi dari identitas pemanggil, bukan dari body, sehingga tidak ada celah mass assignment.
+// @Tags         student
+// @Accept       json
+// @Produce      json
+// @Param        body  body      model.CreateStudentRequest  true  "Data student"
+// @Success      201  {object}  model.WebResponse{data=model.Student}
+// @Failure      400  {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Failure      403  {object}  model.ErrorResponse
+// @Failure      422  {object}  model.ErrorResponse  "Validasi gagal; detail per field ada di fields"
+// @Security     BearerAuth
+// @Router       /student [post]
 func (s *StudentService) Create(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -154,6 +197,23 @@ func (s *StudentService) Create(c *fiber.Ctx) error {
 }
 
 // replace/students/:id tugas 6
+
+// Replace godoc
+//
+// @Summary      Mengganti seluruh data student
+// @Description  Semua field wajib diisi; field yang tidak dikirim akan ditimpa dengan nilai default.
+// @Tags         student
+// @Accept       json
+// @Produce      json
+// @Param        id path  int                          true  "ID student"
+// @Param        body  body  model.ReplaceStudentRequest  true  "Data student pengganti"
+// @Success      200   {object}  model.WebResponse{data=model.Student}
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse  "Validasi gagal"
+// @Security     BearerAuth
+// @Router       /student/{id} [put]
 func (s *StudentService) Replace(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -205,6 +265,23 @@ func (s *StudentService) Replace(c *fiber.Ctx) error {
 }
 
 // patch/students/:id tugas 6
+
+// Patch godoc
+//
+// @Summary      Memperbarui sebagian data student
+// @Description  Hanya field yang dikirim yang diubah. Field yang tidak dikirim tidak berubah.
+// @Tags         student
+// @Accept       json
+// @Produce      json
+// @Param        id    path  int                        true  "ID student"
+// @Param        body  body  model.PatchStudentRequest  true  "Field yang diubah"
+// @Success      200   {object}  model.WebResponse{data=model.Student}
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid atau tidak ada field yang diubah"
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse  "Validasi gagal"
+// @Security     BearerAuth
+// @Router       /student/{id} [patch]
 func (s *StudentService) Patch(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -274,6 +351,22 @@ func (s *StudentService) Patch(c *fiber.Ctx) error {
 // Keduanya ditangkap oleh ValidateAssignRole dan dikembalikan sebagai
 // 422 supaya klien tahu bahwa permintaan ditolak oleh aturan domain,
 // bukan oleh middleware.
+
+// AssignRole godoc
+//
+// @Summary      Mengubah role seorang student
+// @Description  Memerlukan permission student:role:assign. Pemanggil tidak boleh mengubah role-nya sendiri.
+// @Tags         student
+// @Accept       json
+// @Produce      json
+// @Param        id    path  int                       true  "ID student"
+// @Param        body  body  model.AssignRoleRequest  true  "Role baru"
+// @Success      200   {object}  model.WebResponse{data=model.Student}
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse  "Role tidak dikenal atau mengubah role sendiri"
+// @Security     BearerAuth
+// @Router       /student/{id}/role [patch]
 func (s *StudentService) AssignRole(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -307,6 +400,18 @@ func (s *StudentService) AssignRole(c *fiber.Ctx) error {
 	return helper.Ok(c, "role student berhasil diubah", student)
 }
 
+// Delete godoc
+//
+// @Summary      Menghapus data student
+// @Description  Student yang terkait dengan akun pemanggil tidak boleh dihapus.
+// @Tags         student
+// @Produce      json
+// @Param        id   path  int  true  "ID student"
+// @Success      204  "Berhasil dihapus; tanpa body"
+// @Failure      403  {object}  model.ErrorResponse
+// @Failure      404  {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /student/{id} [delete]
 func (s *StudentService) Delete(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()

@@ -103,15 +103,27 @@ var methodsWithBody = map[string]bool{
 	fiber.MethodPatch: true,
 }
 
-// RequireJSON menolak request berisi body yang Content-Type-nya bukan JSON.
+// RequireJSON menolak request yang MEMBAWA body dengan Content-Type bukan JSON.
 // Dipasang per grup route, bukan global.
+//
+// Pengecekan Content-Type hanya dilakukan bila request benar-benar punya
+// body. Endpoint tanpa body — misalnya POST /courses/:id/enroll — tidak
+// menerima input apa pun, sehingga tidak ada header Content-Type yang
+// perlu dikirim. Swagger UI pun tidak pernah mengirim header tersebut
+// untuk operasi tanpa requestBody, sehingga memaksa Content-Type akan
+// menolak request yang sah dengan 415.
 func RequireJSON(c *fiber.Ctx) error {
-	if methodsWithBody[c.Method()] {
-		contentType := c.Get("Content-Type")
+	if !methodsWithBody[c.Method()] {
+		return c.Next()
+	}
 
-		if !strings.HasPrefix(contentType, fiber.MIMEApplicationJSON) {
-			return helper.UnsupportedMediaType("Content-Type harus application/json")
-		}
+	if len(c.Body()) == 0 {
+		return c.Next()
+	}
+
+	contentType := c.Get("Content-Type")
+	if !strings.HasPrefix(contentType, fiber.MIMEApplicationJSON) {
+		return helper.UnsupportedMediaType("Content-Type harus application/json")
 	}
 
 	return c.Next()
