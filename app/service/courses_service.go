@@ -62,11 +62,10 @@ func (s *CourseService) Mine(c *fiber.Ctx) error {
 	for _, course := range courses {
 		total += course.Credits
 	}
-	return helper.Ok(c, "KRS berhasil diambil", fiber.Map{
-		"courses":       courses,
-		"total_credits": total,
-		"max_credits":   MaxCreditsPerSemester,
+	return helper.Ok(c, "KRS berhasil diambil", model.MyCourses{
+		Courses: courses, TotalCredits: total, MaxCredits: MaxCreditsPerSemester,
 	})
+
 }
 
 // ---------- GET /courses/:id ----------

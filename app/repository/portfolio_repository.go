@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -28,6 +29,7 @@ type PortfolioRepository interface {
 	AddProject(context.Context, int, model.PortfolioProject) (model.StudentPortfolio, error)
 	DeleteProject(context.Context, int, string) error
 	TopTechnologies(context.Context) ([]model.TechnologyStat, error)
+	FindAllAfterCursor(context.Context, model.CursorQuery) ([]model.StudentPortfolio, error)
 }
 
 type portfolioDocument struct {
@@ -79,6 +81,81 @@ func (r *portfolioMongoRepository) FindByStudentID(ctx context.Context, studentI
 		return model.StudentPortfolio{}, fmt.Errorf("membaca portofolio: %w", err)
 	}
 	return doc.toModel(), nil
+}
+
+// FindAllAfterCursor mengambil satu halaman daftar seluruh portofolio dengan
+// keyset pagination.
+//
+// Urutannya adalah (updated_at, student_id) DESC. student_id ikut dibandingkan
+// karena updated_at TIDAK dijamin unik: bila dua portofolio diperbarui pada
+// milidetik yang sama dan hanya updated_at yang dibandingkan, salah satu akan
+// terlewat atau terkirim dua kali.
+//
+// Jumlah yang diminta sengaja limit+1. Baris tambahan itu tidak dikirim ke
+// client; keberadaannya hanya dipakai untuk menjawab "masih ada halaman
+// berikutnya?" tanpa perlu COUNT(*) atas seluruh collection.
+//
+// Pagination memakai aggregation (bukan Find) supaya urutan dan filter kunci
+// dapat dinyatakan dalam satu pipeline tanpa bergantung pada API opsi Find.
+func (r *portfolioMongoRepository) FindAllAfterCursor(
+	ctx context.Context, q model.CursorQuery,
+) ([]model.StudentPortfolio, error) {
+	conditions := bson.A{}
+
+	if q.Search != "" {
+		// QuoteMeta dipakai agar karakter khusus regex yang diketik klien
+		// tidak mengubah arti pola pencarian.
+		pattern := regexp.QuoteMeta(q.Search)
+		conditions = append(conditions, bson.D{{Key: "$or", Value: bson.A{
+			bson.D{{Key: "headline", Value: bson.D{{Key: "$regex", Value: pattern}, {Key: "$options", Value: "i"}}}},
+			bson.D{{Key: "bio", Value: bson.D{{Key: "$regex", Value: pattern}, {Key: "$options", Value: "i"}}}},
+		}}})
+	}
+
+	if q.After != nil {
+		// model.Cursor dipakai ulang: CreatedAt berarti updated_at, ID
+		// berarti student_id.
+		conditions = append(conditions, bson.D{{Key: "$or", Value: bson.A{
+			bson.D{{Key: "updated_at", Value: bson.D{{Key: "$lt", Value: q.After.CreatedAt}}}},
+			bson.D{
+				{Key: "updated_at", Value: q.After.CreatedAt},
+				{Key: "student_id", Value: bson.D{{Key: "$lt", Value: q.After.ID}}},
+			},
+		}}})
+	}
+
+	// Semua kondisi digabung dalam satu $and agar tidak ada dua operator
+	// $or pada dokumen yang sama — MongoDB menolak dokumen query yang
+	// memuat kunci operator yang sama dua kali.
+	match := bson.D{}
+	if len(conditions) > 0 {
+		match = bson.D{{Key: "$and", Value: conditions}}
+	}
+
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: match}},
+		bson.D{{Key: "$sort", Value: bson.D{{Key: "updated_at", Value: -1}, {Key: "student_id", Value: -1}}}},
+		bson.D{{Key: "$limit", Value: q.Limit + 1}},
+	}
+
+	cursor, err := r.coll.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil daftar portofolio: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	result := make([]model.StudentPortfolio, 0)
+	for cursor.Next(ctx) {
+		var doc portfolioDocument
+		if err := cursor.Decode(&doc); err != nil {
+			return nil, fmt.Errorf("membaca daftar portofolio: %w", err)
+		}
+		result = append(result, doc.toModel())
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("membaca cursor daftar portofolio: %w", err)
+	}
+	return result, nil
 }
 
 func (r *portfolioMongoRepository) Replace(ctx context.Context, portfolio model.StudentPortfolio) (model.StudentPortfolio, error) {

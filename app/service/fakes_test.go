@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 
@@ -309,4 +310,56 @@ func TestFakeStudentRepository_NotFound(t *testing.T) {
 	if _, err := repo.FindByID(context.Background(), 99); !errors.Is(err, repository.ErrNotFound) {
 		t.Fatalf("FindByID student tak dikenal: error = %v, seharusnya ErrNotFound", err)
 	}
+}
+
+// FindAllAfterCursor meniru keyset pagination pada collection
+// student_portfolios: urutan (updated_at, student_id) DESC, filter pencarian
+// pada headline/bio, dan filter keyset (updated_at, student_id) < cursor.
+//
+// Like repository produksi, hasilnya dipotong pada limit+1 supaya service
+// bisa menentukan "masih ada halaman berikutnya?".
+func (f *fakePortfolioRepository) FindAllAfterCursor(
+	_ context.Context, q model.CursorQuery,
+) ([]model.StudentPortfolio, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	rows := make([]model.StudentPortfolio, 0, len(f.portfolios))
+	for _, portfolio := range f.portfolios {
+		if q.Search != "" && !portfolioContains(portfolio, q.Search) {
+			continue
+		}
+		if q.After != nil && !portfolioBefore(portfolio, *q.After) {
+			continue
+		}
+		rows = append(rows, clonePortfolio(portfolio))
+	}
+
+	sort.Slice(rows, func(i, j int) bool {
+		if !rows[i].UpdatedAt.Equal(rows[j].UpdatedAt) {
+			return rows[i].UpdatedAt.After(rows[j].UpdatedAt)
+		}
+		return rows[i].StudentID > rows[j].StudentID
+	})
+
+	if len(rows) > q.Limit {
+		rows = rows[:q.Limit+1]
+	}
+	return rows, nil
+}
+
+// portfolioContains meniru pencarian case-insensitive pada headline dan bio.
+func portfolioContains(portfolio model.StudentPortfolio, search string) bool {
+	needle := strings.ToLower(search)
+	return strings.Contains(strings.ToLower(portfolio.Headline), needle) ||
+		strings.Contains(strings.ToLower(portfolio.Bio), needle)
+}
+
+// portfolioBefore meniru filter keyset: baris dianggap "sebelum cursor"
+// bila updated_at lebih kecil, atau sama-sama dan student_id lebih kecil.
+func portfolioBefore(portfolio model.StudentPortfolio, after model.Cursor) bool {
+	if portfolio.UpdatedAt.Before(after.CreatedAt) {
+		return true
+	}
+	return portfolio.UpdatedAt.Equal(after.CreatedAt) && portfolio.StudentID < after.ID
 }

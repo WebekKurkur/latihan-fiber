@@ -136,6 +136,49 @@ func (s *PortfolioService) TopTechnologies(c *fiber.Ctx) error {
 	return helper.Ok(c, "statistik teknologi berhasil diambil", stats)
 }
 
+// List menampilkan seluruh portofolio dengan cursor pagination.
+//
+// Endpoint ini memakai keyset pagination, bukan nomor halaman: portofolio
+// yang baru diperbarui dapat muncul di awal daftar tanpa menggeser isi
+// halaman yang sudah dibaca klien.
+//
+// Bentuk response memakai model.PortfolioPage — bukan fiber.Map — agar
+// swag dapat mendokumentasikan isinya.
+func (s *PortfolioService) List(c *fiber.Ctx) error {
+	ctx, cancel := helper.ReqCtx(c)
+	defer cancel()
+
+	q, err := helper.ParseCursorQuery(c)
+	if err != nil {
+		return helper.BadRequest("cursor tidak sah")
+	}
+
+	rows, err := s.portfolios.FindAllAfterCursor(ctx, q)
+	if err != nil {
+		return helper.Internal(err)
+	}
+
+	// Baris tambahan hasil limit+1 dipotong di sini. Ia hanya penanda bahwa
+	// masih ada halaman berikutnya, bukan bagian dari halaman ini.
+	hasMore := len(rows) > q.Limit
+	if hasMore {
+		rows = rows[:q.Limit]
+	}
+
+	meta := model.PortfolioPageMeta{Limit: q.Limit, HasMore: hasMore}
+	if hasMore && len(rows) > 0 {
+		last := rows[len(rows)-1]
+		meta.NextCursor = helper.EncodeCursor(last.UpdatedAt, last.StudentID)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(model.PortfolioPage{
+		Success: true,
+		Message: "daftar portofolio berhasil diambil",
+		Data:    rows,
+		Meta:    meta,
+	})
+}
+
 func (s *PortfolioService) authorizeAndCheckStudent(ctx context.Context, c *fiber.Ctx, studentID int) error {
 	current, ok := helper.CurrentUser(c)
 	if !ok {

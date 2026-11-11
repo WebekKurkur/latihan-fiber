@@ -52,3 +52,28 @@ type TechnologyStat struct {
 	Technology string `json:"technology"`
 	UsageCount int    `json:"usage_count"`
 }
+
+// PortfolioPage adalah response GET /portfolios.
+//
+// Sebelumnya response ini disusun dengan fiber.Map. Hasil JSON-nya sama
+// persis, tetapi map tidak memiliki nama dan bentuk yang dapat dibaca swag,
+// sehingga dokumentasi API tidak dapat menjelaskan isinya.
+//
+// Bentuknya punya struct sendiri karena field "meta" di sini berisi
+// informasi cursor pagination — bukan nomor halaman seperti model.Meta.
+type PortfolioPage struct {
+	Success bool               `json:"success"`
+	Message string             `json:"message"`
+	Data    []StudentPortfolio `json:"data"`
+	Meta    PortfolioPageMeta  `json:"meta"`
+}
+
+// PortfolioPageMeta adalah isi field "meta" pada PortfolioPage.
+//
+// Cursor dipegang sebagai "next_cursor": string yang dikirim kembali sebagai
+// parameter query "cursor" untuk mengambil halaman berikutnya.
+type PortfolioPageMeta struct {
+	Limit      int    `json:"limit"`
+	HasMore    bool   `json:"has_more"`
+	NextCursor string `json:"next_cursor"`
+}

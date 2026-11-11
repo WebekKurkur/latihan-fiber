@@ -55,6 +55,9 @@ func Register(app *fiber.App, deps Dependencies) {
 
 	portfolios := api.Group("/portfolios", middleware.RequireAuth(deps.JWT))
 	portfolios.Get("/stats/technologies", deps.PortfolioService.TopTechnologies)
+	// Modul 12 (Langkah 10): daftar seluruh portofolio dengan cursor
+	// pagination. Membaca portofolio student lain butuh izin student:read:any.
+	portfolios.Get("/", middleware.RequirePermission(perms, "student:read:any"), deps.PortfolioService.List)
 
 	// Modul 9: kelas dan KRS. Route statis (/mine) didaftarkan lebih dulu
 	// agar tidak tertangkap oleh route dinamis /:id.
