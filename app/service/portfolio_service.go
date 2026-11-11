@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gofiber/fiber/v2"
 	"io"
 	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
 
 	"latihan-fiber/app/model"
 	"latihan-fiber/app/repository"
@@ -25,6 +26,20 @@ func NewPortfolioService(students repository.StudentRepository, portfolios repos
 	return &PortfolioService{students: students, portfolios: portfolios, perms: perms}
 }
 
+// Get godoc
+//
+// @Summary      Portofolio seorang mahasiswa
+// @Description  Hanya pemilik portofolio atau pemanggil dengan izin student:read:any.
+// @Tags         portfolios
+// @Produce      json
+// @Param        id    path  int  true  "ID student"
+// @Success      200   {object}  model.WebResponse{data=model.StudentPortfolio}
+// @Failure      400   {object}  model.ErrorResponse  "id bukan angka positif"
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse  "Student atau portofolio tidak ditemukan"
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio [get]
 func (s *PortfolioService) Get(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -42,6 +57,23 @@ func (s *PortfolioService) Get(c *fiber.Ctx) error {
 	return helper.Ok(c, "portofolio berhasil diambil", portfolio)
 }
 
+// Replace godoc
+//
+// @Summary      Mengganti seluruh isi portofolio
+// @Description  Maksimal 20 proyek dan 50 sertifikat. Mengganti berarti seluruh konten lama hilang.
+// @Tags         portfolios
+// @Accept       json
+// @Produce      json
+// @Param        id    path  int                            true  "ID student"
+// @Param        body  body  model.ReplacePortfolioRequest  true  "Isi portofolio baru"
+// @Success      200   {object}  model.WebResponse{data=model.StudentPortfolio}
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      422   {object}  model.ErrorResponse  "Validasi gagal; detail per field ada di fields"
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio [put]
 func (s *PortfolioService) Replace(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -83,6 +115,24 @@ func (s *PortfolioService) Replace(c *fiber.Ctx) error {
 	return helper.Ok(c, "portofolio berhasil disimpan", portfolio)
 }
 
+// AddProject godoc
+//
+// @Summary      Menambah satu proyek ke portofolio
+// @Description  Portofolio boleh memuat paling banyak 20 proyek.
+// @Tags         portfolios
+// @Accept       json
+// @Produce      json
+// @Param        id    path  int                        true  "ID student"
+// @Param        body  body  model.PortfolioProjectInput true  "Proyek baru"
+// @Success      200   {object}  model.WebResponse{data=model.StudentPortfolio}
+// @Failure      400   {object}  model.ErrorResponse  "Body bukan JSON yang valid"
+// @Failure      401   {object}  model.ErrorResponse
+// @Failure      403   {object}  model.ErrorResponse
+// @Failure      404   {object}  model.ErrorResponse
+// @Failure      409   {object}  model.ErrorResponse  "Jumlah proyek sudah mencapai batas 20"
+// @Failure      422   {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio/projects [post]
 func (s *PortfolioService) AddProject(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -109,6 +159,20 @@ func (s *PortfolioService) AddProject(c *fiber.Ctx) error {
 	return helper.Ok(c, "proyek berhasil ditambahkan", portfolio)
 }
 
+// DeleteProject godoc
+//
+// @Summary      Menghapus satu proyek dari portofolio
+// @Tags         portfolios
+// @Produce      json
+// @Param        id         path  int     true  "ID student"
+// @Param        projectId  path  string  true  "ID proyek"
+// @Success      204        "Berhasil dihapus; tanpa body"
+// @Failure      400        {object}  model.ErrorResponse  "id proyek tidak valid"
+// @Failure      401        {object}  model.ErrorResponse
+// @Failure      403        {object}  model.ErrorResponse
+// @Failure      404        {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /students/{id}/portfolio/projects/{projectId} [delete]
 func (s *PortfolioService) DeleteProject(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -126,6 +190,15 @@ func (s *PortfolioService) DeleteProject(c *fiber.Ctx) error {
 	return helper.NoContent(c)
 }
 
+// TopTechnologies godoc
+//
+// @Summary      Statistik teknologi yang paling banyak dipakai
+// @Tags         portfolios
+// @Produce      json
+// @Success      200  {object}  model.WebResponse{data=[]model.TechnologyStat}
+// @Failure      401  {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /portfolios/stats/technologies [get]
 func (s *PortfolioService) TopTechnologies(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()
@@ -144,6 +217,22 @@ func (s *PortfolioService) TopTechnologies(c *fiber.Ctx) error {
 //
 // Bentuk response memakai model.PortfolioPage — bukan fiber.Map — agar
 // swag dapat mendokumentasikan isinya.
+
+// List godoc
+//
+// @Summary      Daftar seluruh portofolio
+// @Description  Cursor pagination: kirim meta.next_cursor sebagai parameter cursor untuk halaman berikutnya.
+// @Tags         portfolios
+// @Produce      json
+// @Param        limit   query  int     false  "Jumlah per halaman, 1 sampai 100"  default(10)
+// @Param        search  query  string  false  "Saring berdasarkan kata kunci"
+// @Param        cursor  query  string  false  "Cursor: halaman sebelumnya"
+// @Success      200     {object}  model.PortfolioPage
+// @Failure      400     {object}  model.ErrorResponse  "Cursor tidak sah"
+// @Failure      401     {object}  model.ErrorResponse
+// @Failure      403     {object}  model.ErrorResponse
+// @Security     BearerAuth
+// @Router       /portfolios [get]
 func (s *PortfolioService) List(c *fiber.Ctx) error {
 	ctx, cancel := helper.ReqCtx(c)
 	defer cancel()

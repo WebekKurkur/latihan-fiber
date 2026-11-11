@@ -1,0 +1,1038 @@
+basePath: /api/v1
+definitions:
+  model.Course:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      credits:
+        type: integer
+      enrolled_count:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      quota:
+        type: integer
+      version:
+        type: integer
+    type: object
+  model.CursorMeta:
+    properties:
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      next_cursor:
+        type: string
+    type: object
+  model.ErrorResponse:
+    properties:
+      code:
+        type: string
+      fields:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  model.LoginRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  model.Meta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  model.MyCourses:
+    properties:
+      courses:
+        items:
+          $ref: '#/definitions/model.Course'
+        type: array
+      max_credits:
+        type: integer
+      total_credits:
+        type: integer
+    type: object
+  model.Notification:
+    properties:
+      body:
+        type: string
+      channel:
+        type: string
+      id:
+        type: integer
+      outbox_id:
+        type: integer
+      sent_at:
+        type: string
+      student_id:
+        type: integer
+      subject:
+        type: string
+    type: object
+  model.PortfolioCertificate:
+    properties:
+      issued_at:
+        type: string
+      issuer:
+        type: string
+      name:
+        type: string
+    type: object
+  model.PortfolioCertificateInput:
+    properties:
+      issued_at:
+        type: string
+      issuer:
+        maxLength: 160
+        minLength: 2
+        type: string
+      name:
+        maxLength: 160
+        minLength: 2
+        type: string
+    required:
+    - issued_at
+    - issuer
+    - name
+    type: object
+  model.PortfolioPage:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/model.StudentPortfolio'
+        type: array
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/model.PortfolioPageMeta'
+      success:
+        type: boolean
+    type: object
+  model.PortfolioPageMeta:
+    properties:
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      next_cursor:
+        type: string
+    type: object
+  model.PortfolioProject:
+    properties:
+      id:
+        type: string
+      link:
+        type: string
+      technologies:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      year:
+        type: integer
+    type: object
+  model.PortfolioProjectInput:
+    properties:
+      link:
+        maxLength: 2048
+        type: string
+      technologies:
+        items:
+          type: string
+        maxItems: 10
+        minItems: 1
+        type: array
+      title:
+        maxLength: 120
+        minLength: 2
+        type: string
+      year:
+        maximum: 2100
+        minimum: 1900
+        type: integer
+    required:
+    - technologies
+    - title
+    - year
+    type: object
+  model.QueueInfo:
+    properties:
+      active:
+        type: integer
+      archived:
+        type: integer
+      completed:
+        type: integer
+      failed_today:
+        type: integer
+      name:
+        type: string
+      pending:
+        type: integer
+      processed_today:
+        type: integer
+      retry:
+        type: integer
+      scheduled:
+        type: integer
+    type: object
+  model.QueueStats:
+    properties:
+      notifications_sent:
+        type: integer
+      oldest_pending_age:
+        type: string
+      outbox_pending:
+        type: integer
+      outbox_published:
+        type: integer
+      queue:
+        $ref: '#/definitions/model.QueueInfo'
+      queue_error:
+        type: string
+    type: object
+  model.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  model.RegisterRequest:
+    properties:
+      email:
+        description: |-
+          Email bersifat OPSIONAL: alamat tujuan notifikasi KRS (Modul 11).
+          Bila dikosongkan, server membuatkan alamat turunan dari nama.
+          Perhatikan: TIDAK ADA field Role di sini. Bila ada, siapa pun
+          dapat mendaftar sebagai admin (kerentanan mass assignment).
+        type: string
+      name:
+        maxLength: 30
+        minLength: 3
+        type: string
+      nim:
+        maxLength: 30
+        minLength: 3
+        type: string
+      password:
+        maxLength: 72
+        type: string
+    required:
+    - name
+    - nim
+    - password
+    type: object
+  model.ReplacePortfolioRequest:
+    properties:
+      bio:
+        maxLength: 2000
+        minLength: 10
+        type: string
+      certificates:
+        items:
+          $ref: '#/definitions/model.PortfolioCertificateInput'
+        maxItems: 50
+        type: array
+      headline:
+        maxLength: 100
+        minLength: 3
+        type: string
+      projects:
+        items:
+          $ref: '#/definitions/model.PortfolioProjectInput'
+        maxItems: 20
+        type: array
+    required:
+    - bio
+    - headline
+    type: object
+  model.Student:
+    properties:
+      created_at:
+        type: string
+      email:
+        description: |-
+          Email adalah alamat tujuan notifikasi KRS (Modul 11).
+          Kosong berarti belum punya alamat; notifikasi untuk student itu
+          tidak dapat dikirim dan dilaporkan sebagai kegagalan permanen.
+        type: string
+      grade:
+        type: number
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      nim:
+        type: string
+      owner_id:
+        description: |-
+          OwnerID menandai student yang mendaftarkan data ini.
+          Dikirim ke JSON hanya bila tersedia; data lama belum memiliki pemilik.
+        type: integer
+      role:
+        type: string
+    type: object
+  model.StudentPortfolio:
+    properties:
+      bio:
+        type: string
+      certificates:
+        items:
+          $ref: '#/definitions/model.PortfolioCertificate'
+        type: array
+      headline:
+        type: string
+      projects:
+        items:
+          $ref: '#/definitions/model.PortfolioProject'
+        type: array
+      student_id:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.SwapRequest:
+    properties:
+      from_course_id:
+        minimum: 1
+        type: integer
+      to_course_id:
+        minimum: 1
+        type: integer
+    required:
+    - from_course_id
+    - to_course_id
+    type: object
+  model.TechnologyStat:
+    properties:
+      technology:
+        type: string
+      usage_count:
+        type: integer
+    type: object
+  model.TokenPair:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        description: detik
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  model.UpdateQuotaRequest:
+    properties:
+      quota:
+        maximum: 500
+        minimum: 1
+        type: integer
+      version:
+        minimum: 1
+        type: integer
+    required:
+    - quota
+    - version
+    type: object
+  model.WebResponse:
+    properties:
+      cursor:
+        $ref: '#/definitions/model.CursorMeta'
+      data: {}
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/model.Meta'
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: |-
+    API pendaftaran kelas (KRS), ulasan kelas, dan notifikasi.
+    Seluruh endpoint selain /auth memerlukan access token.
+  title: API KRS Praktikum Backend Lanjut
+  version: "1.0"
+paths:
+  /admin/queue:
+    get:
+      description: Membutuhkan permission queue:monitor. Tetap menjawab 200 saat Redis
+        mati; field queue_error menjelaskan sebabnya.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.QueueStats'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Keadaan outbox dan queue (admin)
+      tags:
+      - admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Dibatasi 5 kali gagal per menit per IP.
+      parameters:
+      - description: Username dan password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.TokenPair'
+              type: object
+        "401":
+          description: Username atau password salah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "429":
+          description: Terlalu banyak percobaan login
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Login dan mendapatkan pasangan token
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token lama langsung dicabut (rotation).
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.TokenPair'
+              type: object
+        "401":
+          description: Refresh token tidak valid, kedaluwarsa, atau sudah dicabut
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Menukar refresh token dengan pasangan token baru
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Role akun baru selalu "user". Password minimal 8 karakter dan memuat
+        huruf serta angka.
+      parameters:
+      - description: Data akun baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Student'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Username sudah dipakai
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal; detail per field ada di fields
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Mendaftarkan akun baru
+      tags:
+      - auth
+  /courses:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Course'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Daftar seluruh kelas
+      tags:
+      - courses
+  /courses/{id}:
+    get:
+      parameters:
+      - description: ID kelas
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Course'
+              type: object
+        "400":
+          description: ID bukan angka positif
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Detail satu kelas
+      tags:
+      - courses
+    patch:
+      consumes:
+      - application/json
+      description: 'Optimistic locking: kirim version yang terakhir dilihat. Membutuhkan
+        permission course:manage.'
+      parameters:
+      - description: ID kelas
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Kuota baru dan version
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateQuotaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Course'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: VERSION_CONFLICT atau QUOTA_BELOW_ENROLLED
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengubah kuota kelas (admin)
+      tags:
+      - courses
+  /courses/{id}/enroll:
+    delete:
+      parameters:
+      - description: ID kelas
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Berhasil keluar; tanpa body
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: NOT_ENROLLED
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Keluar dari sebuah kelas
+      tags:
+      - courses
+    post:
+      description: |-
+        Mengambil satu kursi dan mencatat event enrollment.created ke outbox dalam SATU transaction.
+        Kode error 409: COURSE_FULL, ALREADY_ENROLLED, CREDIT_LIMIT_EXCEEDED.
+      parameters:
+      - description: ID kelas
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: URL kelas yang baru didaftari
+              type: string
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Course'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Kuota penuh, sudah terdaftar, atau batas SKS terlampaui
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mendaftar ke sebuah kelas
+      tags:
+      - courses
+  /courses/mine:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.MyCourses'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: KRS milik mahasiswa yang sedang login
+      tags:
+      - courses
+  /enrollments/swap:
+    post:
+      consumes:
+      - application/json
+      description: Keluar dari kelas lama dan masuk ke kelas baru sebagai satu tindakan.
+        Bila kelas baru penuh, mahasiswa tetap di kelas lama.
+      parameters:
+      - description: Kelas asal dan kelas tujuan
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.SwapRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.Course'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: COURSE_FULL, NOT_ENROLLED, CREDIT_LIMIT_EXCEEDED
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Pindah kelas
+      tags:
+      - courses
+  /notifications/mine:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.Notification'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Notifikasi milik mahasiswa yang sedang login
+      tags:
+      - notifications
+  /portfolios:
+    get:
+      description: 'Cursor pagination: kirim meta.next_cursor sebagai parameter cursor
+        untuk halaman berikutnya.'
+      parameters:
+      - default: 10
+        description: Jumlah per halaman, 1 sampai 100
+        in: query
+        name: limit
+        type: integer
+      - description: Saring berdasarkan kata kunci
+        in: query
+        name: search
+        type: string
+      - description: 'Cursor: halaman sebelumnya'
+        in: query
+        name: cursor
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.PortfolioPage'
+        "400":
+          description: Cursor tidak sah
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Daftar seluruh portofolio
+      tags:
+      - portfolios
+  /portfolios/stats/technologies:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.TechnologyStat'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Statistik teknologi yang paling banyak dipakai
+      tags:
+      - portfolios
+  /students/{id}/portfolio:
+    get:
+      description: Hanya pemilik portofolio atau pemanggil dengan izin student:read:any.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.StudentPortfolio'
+              type: object
+        "400":
+          description: id bukan angka positif
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Student atau portofolio tidak ditemukan
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Portofolio seorang mahasiswa
+      tags:
+      - portfolios
+    put:
+      consumes:
+      - application/json
+      description: Maksimal 20 proyek dan 50 sertifikat. Mengganti berarti seluruh
+        konten lama hilang.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Isi portofolio baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ReplacePortfolioRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.StudentPortfolio'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Validasi gagal; detail per field ada di fields
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mengganti seluruh isi portofolio
+      tags:
+      - portfolios
+  /students/{id}/portfolio/projects:
+    post:
+      consumes:
+      - application/json
+      description: Portofolio boleh memuat paling banyak 20 proyek.
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Proyek baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.PortfolioProjectInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.WebResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.StudentPortfolio'
+              type: object
+        "400":
+          description: Body bukan JSON yang valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Jumlah proyek sudah mencapai batas 20
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menambah satu proyek ke portofolio
+      tags:
+      - portfolios
+  /students/{id}/portfolio/projects/{projectId}:
+    delete:
+      parameters:
+      - description: ID student
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID proyek
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Berhasil dihapus; tanpa body
+        "400":
+          description: id proyek tidak valid
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Menghapus satu proyek dari portofolio
+      tags:
+      - portfolios
+securityDefinitions:
+  BearerAuth:
+    description: 'Isi dengan: Bearer <access_token>'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
