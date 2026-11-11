@@ -1,0 +1,34 @@
+# File yang TIDAK ikut dikirim ke Docker saat build.
+
+# Secret tidak boleh masuk image. Siapa pun yang memegang image dapat
+# membaca seluruh isinya, termasuk file yang "tersembunyi".
+.env
+.env.*
+
+# Hasil kerja lokal yang tidak dibutuhkan untuk build.
+.git
+logs/
+*.log
+coverage.out
+
+# Modul Go terpisah: punya go.mod sendiri sehingga tidak ikut dikompilasi
+# oleh binary aplikasi, dan tidak perlu ikut di dalam image.
+UTS/
+tugas2/
+
+# Berkas pendukung penilaian dan catatan modul.
+ignore/
+*.md
+
+# Kode pengujian dan alat bantu: tidak diperlukan saat runtime.
+tests/
+tools/
+
+# Binary hasil build lokal.
+latihan-fiber.exe
+latihan-fiber
+*.exe
+
+# Catatan: folder docs/ SENGAJA tidak dikecualikan. Isinya (hasil
+# "go tool swag init") adalah sumber anotasi Swagger yang/presentation
+# pada saat runtime, dan Docker tidak menjalankan swag saat build.
